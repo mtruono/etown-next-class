@@ -1,0 +1,67 @@
+{
+  "schemaVersion": 1,
+  "configurationId": "fictional-term-v1",
+  "configurationLabel": "Fictional Classes",
+  "campus": {
+    "id": "sample-campus",
+    "name": "Example College",
+    "timezone": "America/New_York",
+    "concept3dMapId": "999",
+    "officialMapUrl": "https://map.concept3d.com/?id=999",
+    "campusCenter": { "latitude": 39.95, "longitude": -75.16 },
+    "onCampusRadiusMeters": 2000
+  },
+  "term": {
+    "id": "fictional-term",
+    "scheduleStart": "2030-01-07",
+    "regularClassesEnd": "2030-01-18",
+    "printedScheduleEnd": "2030-01-25",
+    "finalsMessageStart": "2030-01-19",
+    "finalsMessageEnd": "2030-01-25",
+    "calendarVerifiedDate": "2029-12-01"
+  },
+  "homeFallbackDestinationId": "sample-home",
+  "destinations": [
+    {
+      "id": "sample-home",
+      "displayName": "Example Residence",
+      "scheduleCode": null,
+      "latitude": 39.949,
+      "longitude": -75.161,
+      "level": 0,
+      "coordinateStatus": "fictional",
+      "confidence": "low",
+      "campusMapSearchKey": "Example Residence",
+      "roomRoutingAvailable": false,
+      "navigationNote": "Replace with a cited building-level coordinate."
+    },
+    {
+      "id": "sample-classroom-building",
+      "displayName": "Example Science Center",
+      "scheduleCode": "XS",
+      "latitude": 39.951,
+      "longitude": -75.159,
+      "level": 0,
+      "coordinateStatus": "fictional",
+      "confidence": "low",
+      "campusMapSearchKey": "Example Science Center",
+      "roomRoutingAvailable": false,
+      "navigationNote": "Replace with a cited building-level coordinate."
+    }
+  ],
+  "meetingPatterns": [
+    {
+      "id": "bio201x-mw",
+      "courseCode": "BIO201X",
+      "title": "Fictional Field Biology",
+      "isoWeekdays": [1, 3],
+      "startTime": "09:00",
+      "endTime": "10:15",
+      "destinationId": "sample-classroom-building",
+      "room": "A12",
+      "defaultModality": "in-person"
+    }
+  ],
+  "dateRules": [],
+  "finalsAndReadingDates": []
+}
