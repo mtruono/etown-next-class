@@ -19,6 +19,8 @@ export default defineConfig(({ command }) => ({
       injectRegister: false,
       manifest: false,
       workbox: {
+        skipWaiting: true,
+        clientsClaim: true,
         globPatterns: ["**/*.{js,css,html,png,svg,webmanifest}"],
         cleanupOutdatedCaches: true,
         navigateFallback: "index.html",

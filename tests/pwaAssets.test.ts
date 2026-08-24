@@ -61,6 +61,8 @@ describe("PWA assets", () => {
     const config = await readFile("vite.config.ts", "utf8");
     const main = await readFile("src/main.ts", "utf8");
     expect(config).toContain('registerType: "autoUpdate"');
+    expect(config).toContain("skipWaiting: true");
+    expect(config).toContain("clientsClaim: true");
     expect(main).toContain("registerSW({ immediate: true })");
   });
 });
