@@ -1,24 +1,15 @@
 import type { Page } from "@playwright/test";
 
-import type { AppConfiguration } from "../src/domain/types";
-import { encodeSetupCode } from "../src/import/setupCode";
-import { syntheticConfiguration } from "../tests/fixtures/syntheticConfiguration";
-
-export async function importSyntheticSchedule(
+export async function openPublicSchedule(
   page: Page,
-  configuration: AppConfiguration = syntheticConfiguration(),
+  instant = new Date("2026-08-23T16:00:00Z"),
 ): Promise<void> {
-  const code = await encodeSetupCode(configuration);
+  await page.clock.install({ time: instant });
   await page.goto("/");
-  await page.getByLabel("Private setup code").fill(code);
-  await page.getByRole("button", { name: "Review setup code" }).click();
-  await page
-    .getByRole("button", { name: "Save schedule on this device" })
-    .click();
   await page.getByRole("heading", { name: "Etown Next Class" }).waitFor();
 }
 
-export async function installSyntheticGeolocation(page: Page): Promise<void> {
+export async function installCampusGeolocation(page: Page): Promise<void> {
   await page.addInitScript(() => {
     const testWindow = window as Window & { __geoCalls?: number };
     testWindow.__geoCalls = 0;
@@ -29,8 +20,8 @@ export async function installSyntheticGeolocation(page: Page): Promise<void> {
           testWindow.__geoCalls = (testWindow.__geoCalls ?? 0) + 1;
           success({
             coords: {
-              latitude: 39.95,
-              longitude: -75.16,
+              latitude: 40.1503,
+              longitude: -76.5917,
               accuracy: 20,
               altitude: null,
               altitudeAccuracy: null,

@@ -1,38 +1,24 @@
 import { expect, test } from "@playwright/test";
 
-import { encodeSetupCode } from "../src/import/setupCode";
-import { syntheticConfiguration } from "../tests/fixtures/syntheticConfiguration";
-import { importSyntheticSchedule } from "./helpers";
+import { openPublicSchedule } from "./helpers";
 
-test("valid setup is previewed, confirmed, and restored after reload", async ({
+test("public link opens the schedule immediately with no setup screen", async ({
   page,
 }) => {
-  await importSyntheticSchedule(page);
-  await expect(page.getByText("BIO201X").first()).toBeVisible();
-  await expect(page.getByText("Example Science Center").first()).toBeVisible();
-  await expect(page.getByText("Room A12").first()).toBeVisible();
-  await page.reload();
-  await expect(page.getByText("BIO201X").first()).toBeVisible();
+  await openPublicSchedule(page);
+  await expect(page.getByText("MA251B").first()).toBeVisible();
+  await expect(page.getByText("Nicarry Hall").first()).toBeVisible();
+  await expect(page.getByText("Room 202").first()).toBeVisible();
+  await expect(page.getByLabel("Private setup code")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /setup code/iu })).toHaveCount(
+    0,
+  );
 });
 
-test("invalid code is associated with the import form and stores nothing", async ({
-  page,
-}) => {
-  await page.goto("/");
-  await page.getByLabel("Private setup code").fill("ETOWN1.invalid.code");
-  await page.getByRole("button", { name: "Review setup code" }).click();
-  await expect(page.getByRole("alert")).not.toBeEmpty();
-  await expect(page.evaluate(() => localStorage.length)).resolves.toBe(0);
-});
-
-test("setup fragment is removed and still requires confirmation", async ({
-  page,
-}) => {
-  const code = await encodeSetupCode(syntheticConfiguration());
-  await page.goto(`/#setup=${encodeURIComponent(code)}`);
+test("obsolete fragments are removed and never rendered", async ({ page }) => {
+  await page.clock.install({ time: new Date("2026-08-23T16:00:00Z") });
+  await page.goto("/#setup=obsolete-private-value");
   await expect(page).not.toHaveURL(/#setup=/u);
-  await expect(
-    page.getByRole("heading", { name: "Confirm schedule import" }),
-  ).toBeVisible();
-  await expect(page.evaluate(() => localStorage.length)).resolves.toBe(0);
+  await expect(page.getByText("obsolete-private-value")).toHaveCount(0);
+  await expect(page.getByText("MA251B").first()).toBeVisible();
 });

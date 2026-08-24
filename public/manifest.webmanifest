@@ -1,7 +1,7 @@
 {
   "name": "Etown Next Class",
   "short_name": "Next Class",
-  "description": "An unofficial, private-on-device class schedule and campus walking-route launcher.",
+  "description": "A simple Fall 2026 class schedule with an original in-app campus orientation guide.",
   "display": "standalone",
   "orientation": "portrait",
   "start_url": "./",

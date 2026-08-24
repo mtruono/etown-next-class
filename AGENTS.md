@@ -1,12 +1,13 @@
-# Repository invariants
+# Engineering invariants
 
-- Never commit private schedule data, setup codes, generated calendars, or private route-verification output.
-- Never invent or imply a verified campus entrance, indoor route, floor, stairway, or classroom position.
-- Preserve zero-dollar operation: static hosting, no backend, no paid API, and no Apple developer account.
-- Do not introduce a native wrapper.
-- Do not introduce a paid map SDK or undocumented map API.
-- Never request location automatically. A route-related user action must precede every geolocation request.
-- Treat schedule and academic-calendar rules as validated data, not scattered UI conditions.
-- Render imported strings as text. Never use imported content as HTML.
-- Run `npm run check` before pushing.
-- When private inputs are available, also run `npm run private:verify` and both pre- and post-build privacy checks.
+- The owner explicitly selected the simple public-link model. The timetable may be public, but never add a student name, student ID, email address, dorm room, or other identity information.
+- Never commit anything under `private/`, an `.ics` file, generated setup code, generated audit, or private route-verification page.
+- The production interface must open directly to the schedule. Do not restore a login or setup-code gate unless the owner explicitly reverses the public-link decision.
+- Keep the campus guide inside the app. Do not make Concept3D, Apple Maps, Google Maps, a remote tile service, or another external map the primary experience.
+- Never claim the straight-line schematic is a walking route. Never invent a campus entrance, indoor route, floor, stairs, hallway, accessible path, or verified classroom point.
+- Preserve $0 operation: static GitHub Pages hosting, no backend, no paid API, no subscription, and no native wrapper.
+- Never request location automatically. Use one-shot geolocation only after a user action, never persist it, and never log or transmit it.
+- Treat official schedule and academic-calendar exceptions as centralized data, not scattered UI conditions.
+- Use Eastern campus time through Temporal and inject `now` into deterministic logic.
+- Run `npm run check` before pushing. Run `npm run private:verify` when the ignored seed exists.
+- Run privacy checks before and after production builds, and confirm private files are ignored and untracked.

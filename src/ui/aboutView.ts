@@ -1,4 +1,4 @@
-import { actionButton, element, externalLink, viewShell } from "./elements";
+import { actionButton, element, viewShell } from "./elements";
 
 export function renderAbout(root: HTMLElement, back: () => void): void {
   root.replaceChildren();
@@ -10,7 +10,7 @@ export function renderAbout(root: HTMLElement, back: () => void): void {
     "Individual classroom locations are not available.",
     "Indoor GPS may be inaccurate.",
     "The app cannot verify construction closures or temporary path changes.",
-    "The official campus map or selected map provider determines the displayed path.",
+    "The in-app line shows straight-line orientation, not a verified walking path.",
     "Confirm the room number through building signs.",
     "A wrong precise claim is worse than an honest approximation.",
   ];
@@ -25,13 +25,13 @@ export function renderAbout(root: HTMLElement, back: () => void): void {
       { className: "panel" },
       element("h2", { text: "Privacy" }),
       element("p", {
-        text: "Your imported schedule is stored only in this browser on this device. The raw setup code is not retained after import.",
+        text: "This simple version includes the timetable in the public app, so anyone with the link can view it. It includes no student name, ID, email address, or other identity information.",
       }),
       element("p", {
-        text: "Live GPS is requested only after a directions action. Captured live coordinates are held only in memory long enough to create route choices. They are not stored, logged, or sent to this app’s server.",
+        text: "Live GPS is requested only after a Campus guide action. Captured coordinates are held only in memory while the guide is open. They are not stored, logged, or sent to this app’s server.",
       }),
       element("p", {
-        text: "When you tap an external route link, that map provider receives the selected start and destination coordinates. Setup-code checks detect corruption or changes; the code is not encrypted.",
+        text: "The app draws its own local schematic. It does not send the captured position to Etown, Apple Maps, Google Maps, analytics, or advertising services.",
       }),
     ),
     element(
@@ -42,16 +42,11 @@ export function renderAbout(root: HTMLElement, back: () => void): void {
     ),
     element(
       "section",
-      { className: "panel compact-links" },
-      element("h2", { text: "Official references" }),
-      externalLink(
-        "Elizabethtown College campus map",
-        "https://www.etown.edu/map/",
-      ),
-      externalLink(
-        "Elizabethtown College academic calendar",
-        "https://www.etown.edu/offices/registration-records/academic-calendar-2026-27.aspx",
-      ),
+      { className: "panel" },
+      element("h2", { text: "What the map is" }),
+      element("p", {
+        text: "The campus view is an original, offline-capable orientation schematic made for this app. It uses approximate building-center points and a straight-line guide. It is not campus map imagery, turn-by-turn navigation, or an indoor map.",
+      }),
     ),
     actionButton("Back", back, { className: "button button-quiet" }),
   );

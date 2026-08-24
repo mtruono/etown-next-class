@@ -421,6 +421,114 @@ legend {
   margin-top: 0;
 }
 
+.map-panel {
+  overflow: hidden;
+}
+
+.map-purpose,
+.orientation-summary,
+.map-disclaimer {
+  margin: 0.5rem 0;
+}
+
+.map-purpose {
+  color: var(--navy);
+  font-weight: 750;
+}
+
+.orientation-summary {
+  border-left: 0.3rem solid var(--gold);
+  padding: 0.7rem 0.85rem;
+  background: #fff9e9;
+  font-size: 1.08rem;
+  font-weight: 800;
+}
+
+.map-disclaimer {
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.campus-map {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin: 0.85rem 0;
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  background: #eef5ef;
+}
+
+.map-background > rect {
+  fill: #f7faf5;
+  stroke: #a6b7aa;
+  stroke-width: 1.5;
+}
+
+.map-background > line {
+  stroke: #d9e4db;
+  stroke-dasharray: 4 7;
+  stroke-width: 1;
+}
+
+.north-arrow path {
+  fill: none;
+  stroke: var(--navy);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.4;
+}
+
+.north-arrow text {
+  fill: var(--navy);
+  font-size: 0.8rem;
+  font-weight: 850;
+}
+
+.map-guide > line {
+  stroke: #a63f2d;
+  stroke-dasharray: 8 6;
+  stroke-linecap: round;
+  stroke-width: 4;
+}
+
+.map-origin-halo {
+  fill: #ffffff;
+  stroke: #1769aa;
+  stroke-width: 3;
+}
+
+.map-origin-dot {
+  fill: #1769aa;
+}
+
+.map-origin-label,
+.map-building text {
+  paint-order: stroke;
+  stroke: #f7faf5;
+  stroke-linejoin: round;
+  stroke-width: 4px;
+  fill: var(--ink);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.map-building rect {
+  fill: var(--navy-light);
+  stroke: #ffffff;
+  stroke-width: 2;
+}
+
+.map-destination-ring {
+  fill: #fff3bf;
+  stroke: #8a5b00;
+  stroke-width: 4;
+}
+
+.map-building-destination rect {
+  fill: #8a5b00;
+}
+
 details {
   border: 1px solid var(--line);
   border-radius: 0.75rem;

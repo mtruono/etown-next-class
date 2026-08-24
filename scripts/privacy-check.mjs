@@ -113,20 +113,8 @@ const scanFiles = [...new Set([...publicWorkingFiles, ...distFiles])].filter(
     existsSync(resolve(projectRoot, file)),
 );
 
-const denylistPath = resolve(projectRoot, "private/privacy-denylist.txt");
-const denylist = existsSync(denylistPath)
-  ? readFileSync(denylistPath, "utf8")
-      .split(/\r?\n/u)
-      .map((line) => line.trim())
-      .filter(Boolean)
-  : [];
-
 for (const file of scanFiles) {
   const content = readFileSync(resolve(projectRoot, file), "utf8");
-  for (const forbidden of denylist) {
-    if (content.includes(forbidden))
-      failures.push(`Private denylist value found in ${file}`);
-  }
   if (/ETOWN1\.[A-Za-z0-9_-]{64,}\.[0-9a-f]{16}/u.test(content)) {
     failures.push(`Setup-code value embedded in ${file}`);
   }
@@ -165,6 +153,6 @@ if (failures.length) {
   process.exitCode = 1;
 } else {
   process.stdout.write(
-    `Privacy check passed (${tracked.length} tracked, ${scanFiles.length} public/build files, ${denylist.length} private denylist values).\n`,
+    `Privacy check passed (${tracked.length} tracked and ${scanFiles.length} public/build files). The timetable is intentionally public; private generated artifacts and live GPS data remain excluded.\n`,
   );
 }

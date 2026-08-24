@@ -3,9 +3,9 @@
 The PWA's Home Screen icon is the normal launcher. If a Siri phrase is useful, create this simple Shortcut on the iPhone after deployment:
 
 1. Open **Shortcuts** and create a new Shortcut.
-2. Add a **URL** action and paste the deployed PWA URL.
+2. Add a **URL** action containing `https://mtruono.github.io/etown-next-class/`.
 3. Add **Open URLs** beneath it.
 4. Name the Shortcut **Next Class**.
 5. Optionally add it to the Home Screen, or say “Siri, Next Class.”
 
-This shortcut only opens the PWA. The PWA itself calculates the next class and requests location after a route action. No installable or signed `.shortcut` file is generated or claimed.
+This shortcut only opens the PWA. The PWA immediately shows the schedule and requests location only after a Campus guide action. No installable or signed `.shortcut` file is generated or claimed.

@@ -1,15 +1,34 @@
-# Privacy model
+# Privacy
 
-The deployed site is public and generic. It contains no assigned class schedule. A private setup code is pasted only after the Home Screen app is installed. The browser verifies its checksum, strictly validates its JSON, presents a human-readable preview, and requires confirmation. It stores only the parsed configuration under a versioned local-storage key. The raw imported code is not stored.
+## The timetable is public
 
-The setup code is **not encrypted**. Its SHA-256 checksum detects corruption or changes; anyone who obtains the code can decode its contents. Keep it private. Exporting from Settings creates a fresh code from the parsed local configuration and displays it only on that device.
+This deployment uses the owner-selected simple public-link model. The Fall 2026 timetable, course details, rooms, term exceptions, and approximate building coordinates are included in the public app. Anyone with the link can view them. There is no login, access code, or claim that this data is private.
 
-Live GPS is never requested on page load. A directions-related tap starts one `getCurrentPosition` request. Captured live coordinates and reported accuracy remain in volatile page memory only. They are not written to local storage, logged, sent to an application server, included in analytics, or watched continuously. The app has no backend and no analytics.
+The app does not include or request a student name, student ID, email address, phone number, dorm room, account, or other identity information.
 
-After location is resolved, the app presents route links and requires another tap. The selected external provider then receives the origin and destination coordinates needed for that route. The provider applies its own privacy policy. A destination-only link omits live origin where supported. Destination and campus-center coordinates are part of the imported configuration because they are required for routing; they are public-place approximations, not captured device-location history.
+## Live location is not public
 
-An optional `#setup=` link is parsed but never imported automatically. The fragment is removed immediately with `history.replaceState`, then the normal preview and confirmation flow applies. The service worker caches only same-origin shell assets, not map pages, route responses, GPS data, or setup-code values.
+The app never asks for location on page load. It calls `navigator.geolocation.getCurrentPosition` only after a user taps Campus guide.
 
-“Erase schedule from this device” asks for confirmation and removes every local-storage key owned by Etown Next Class, including the schedule and preferred provider. It does not affect unrelated browser storage.
+The returned coordinates and accuracy value are held in memory only while the guide is open. They are not:
 
-No name, student ID, email address, dorm room number, account, authentication credential, advertising identifier, or tracking identifier is required.
+- saved to local storage or IndexedDB;
+- written to logs;
+- sent to this application’s static host;
+- sent to Elizabethtown College, Concept3D, Apple Maps, or Google Maps;
+- sent to analytics, advertising, or error-reporting services; or
+- watched continuously in the background.
+
+Closing or leaving the guide discards the captured position. The browser and operating system still control location permission and may have their own platform-level privacy behavior.
+
+## Local map
+
+The Campus guide is an SVG schematic created from local application data. It loads no map tiles, remote scripts, remote styles, or third-party map iframe. It provides approximate straight-line orientation rather than a verified path.
+
+## Offline and storage
+
+The service worker caches the public application shell and local static assets. That cache necessarily includes the public timetable. It does not cache GPS data or a setup fragment. The app does not need schedule data in browser storage.
+
+## Private generator artifacts
+
+Optional `.ics`, setup-code, audit, and route-verification outputs under `private/` remain ignored. They are development artifacts and are not included in the public build. Run `npm run privacy:check` before every push and after every build.

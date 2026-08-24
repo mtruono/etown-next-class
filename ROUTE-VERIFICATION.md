@@ -1,22 +1,16 @@
-# Route verification record
+# Campus schematic verification record
 
-Checked: **August 23, 2026**
+Last engineering review: **August 23, 2026**
 
-## Reference pages
+## Production mapping decision
 
-- Official campus-map page: <https://www.etown.edu/map/>
-- Live Concept3D map, map ID 1180: <https://map.concept3d.com/?id=1180>
-- Building and room key: <https://www.etown.edu/offices/registration-records/bldg_rm_key.aspx>
-- Founders Residence Hall: <https://www.etown.edu/offices/residencelife/founders.aspx>
-- Concept3D wayfinding URL documentation: <https://help.concept3d.com/hc/en-us/articles/42406953521939-How-to-Build-a-Wayfinding-URL-for-Your-Concept3D-Map>
-- Concept3D interactive-map query strings: <https://help.concept3d.com/hc/en-us/articles/115004127673-Interactive-Map-Query-Strings>
-- Concept3D mobile blue-dot documentation: <https://help.concept3d.com/hc/en-us/articles/41036084853523-Mobile-Location-Services-Prompting-and-Auto-Enabling-the-Blue-Dot>
-- Google Maps URL documentation: <https://developers.google.com/maps/documentation/urls/get-started>
-- Apple Map Links documentation: <https://developer.apple.com/library/archive/featuredarticles/iPhoneURLScheme_Reference/MapLinks/MapLinks.html>
+The production app no longer launches or embeds Concept3D, Apple Maps, Google Maps, or any other third-party map. It renders its own SVG campus orientation schematic from local approximate coordinates. The only line drawn from the captured position to a destination is a straight-line guide. It is never described as a walking route.
 
-## Supplied coordinate inventory
+Legacy external URL builders and their unit tests remain isolated development utilities, but the production controller and views do not import or expose them.
 
-These are the private configuration's building-level routing points. No coordinate below was independently verified as a doorway.
+## Coordinate inventory
+
+No coordinate below has been independently verified as a doorway.
 
 | Destination     | Latitude | Longitude | Confidence | Status                                               |
 | --------------- | -------: | --------: | ---------- | ---------------------------------------------------- |
@@ -25,30 +19,38 @@ These are the private configuration's building-level routing points. No coordina
 | Steinman Center | 40.15045 | -76.59336 | Medium     | Approximate building center                          |
 | Esbenshade Hall | 40.15129 | -76.59195 | Low        | Provisional Masters Center and Esbenshade-area proxy |
 
-## What was checked
+## Engineering checks
 
-- Etown's official campus-map page uses Concept3D map ID `1180`.
-- Concept3D documents the standard walking URL structure used by the generator: walking mode, `ada:false`, `from`, `to`, level, start name, and end name separated in the hash.
-- Concept3D documents `#!s/key=...` for search and `#!fls/` for mobile location/blue-dot mode.
-- A standard Etown wayfinding URL was accepted and normalized by the hosted map. The available cloud browser then failed to initialize WebGL, so a visible Etown route panel and path were **not** confirmed.
-- Google documents `api=1`, coordinates, `travelmode=walking`, optional origin, and `dir_action=navigate`. Immediate turn-by-turn launch is not guaranteed; a route preview may appear.
-- Apple's archived official Map Links reference documents `saddr`, `daddr`, and `dirflg=w`. The HTTPS handoff was not tested on the target iPhone.
-- The ignored generator creates `private/generated/route-verification.html` with the required campus, search, live-map, Apple, and Google links for manual checking.
+- The schematic is built from local SVG elements and contains no remote image, iframe, script, style, or map tile.
+- Projection, Haversine distance, bearing, and compass-label calculations have deterministic unit tests.
+- The captured GPS coordinate is plotted only after a user action and is never persisted.
+- An off-campus point is omitted from the close-up schematic rather than compressing the campus into an unusable view.
+- Low-accuracy GPS requires an explicit decision before use.
+- The destination room stays visible above the map.
+- Copy explicitly says the line may cross buildings or other obstacles.
 
-## What remains unverified
+## Real-device status
 
-| Item                                        | Result                                                            |
-| ------------------------------------------- | ----------------------------------------------------------------- |
-| Standard URL accepted by Concept3D          | Yes, syntax accepted/normalized                                   |
-| Etown directions panel visually appeared    | Not confirmed because WebGL failed in the available cloud browser |
-| Generated path is fastest or usable         | Not verified                                                      |
-| Any entrance or classroom pin               | Not verified                                                      |
-| Any indoor route, floor, stairs, or hallway | Not available and not claimed                                     |
-| Live blue dot on the target iPhone          | Not tested                                                        |
-| Combined `fls` plus prefilled route syntax  | Not enabled or claimed                                            |
-| Apple Maps handoff on the target iPhone     | Not tested                                                        |
-| Google Maps handoff on the target iPhone    | Not tested                                                        |
-| Temporary construction/path closures        | Not verified                                                      |
-| Official marker IDs for these buildings     | Not established                                                   |
+| Item                                     | Status                       |
+| ---------------------------------------- | ---------------------------- |
+| Local SVG renders in automated DOM tests | Verified                     |
+| Real iPhone location permission          | Not yet tested               |
+| Real iPhone GPS marker placement         | Not yet tested               |
+| Nicarry approximate point on campus      | Needs visual campus check    |
+| Steinman approximate point on campus     | Needs visual campus check    |
+| Esbenshade approximate point on campus   | High-priority campus check   |
+| Founders B fallback point                | Needs visual campus check    |
+| Any entrance or classroom position       | Not verified and not claimed |
+| Any walking path or obstacle avoidance   | Not provided and not claimed |
+| Temporary construction or path closures  | Not available                |
 
-Esbenshade may appear in the official map as part of the Masters Center rather than under the supplied search phrase. Test both the supplied building search and visible campus signage before changing the private key; do not silently substitute an unverified result.
+## Historical reference pages
+
+These references helped establish public campus naming and the earlier mapping approach. They are documentation only and are not runtime dependencies:
+
+- <https://www.etown.edu/map/>
+- <https://www.etown.edu/offices/registration-records/bldg_rm_key.aspx>
+- <https://www.etown.edu/offices/residencelife/founders.aspx>
+- <https://map.concept3d.com/?id=1180>
+
+Update a coordinate only from a cited, credible source or a documented on-site check. Record what changed, the date, and exactly what was and was not verified. A wrong precise claim is worse than an honest approximation.

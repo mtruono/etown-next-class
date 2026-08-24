@@ -1,16 +1,18 @@
 # Prepare a new semester
 
-1. Copy `private/schedule.seed.json` to a secure backup before editing it. If starting fresh, copy `private.example/schedule.seed.example.json` into the ignored `private/` directory.
-2. Replace the configuration label and every term boundary. `regularClassesEnd` controls recurrence; do not use a later printed or finals date as a recurrence end.
-3. Replace meeting patterns with the new course code, title, ISO weekdays, campus-local start and end time, destination ID, room, and modality. Give every pattern a stable unique ID.
-4. Enter official no-class dates, replacement-weekday schedules, modality overrides, and informational dates from the official academic calendar. One date may have only one rule.
-5. Add or revise destinations in the private payload. A new building can be delivered through the setup code without redeploying the public app. Use only a cited building-level coordinate, confidence label, search key, and candid navigation note. Never invent a door or indoor route.
-6. Update the ignored `private/schedule.expectations.private.json` from an independent manual count and add boundary, exception, virtual, finals, and daylight-saving cases.
-7. Update the ignored `private/privacy-denylist.txt` with the new course codes, titles, pattern IDs, and distinctive private strings.
-8. Run `npm run private:generate`. It validates, expands, verifies, and creates a new setup code, explicit-event ICS, audit, and route page.
-9. Read `private/generated/schedule-audit.json`, manually compare every count and first/last occurrence to the source schedule, and run `npm run private:verify` again.
-10. Send `private/generated/student-setup.txt` privately. In Settings on the iPhone, choose **Import or replace schedule**, review the complete preview, and tap **Replace existing schedule**.
-11. If the companion calendar is wanted, privately transfer `private/generated/student-classes.ics`. It is not required by the PWA.
-12. Run `npm run privacy:check`, build, run it again, and confirm `git status --ignored` shows all private inputs and outputs as ignored.
+The current simple-link design intentionally ships the timetable in the public app. A new semester therefore requires editing and redeploying the public configuration.
 
-Do not repurpose an old setup code or hand-edit the ICS. Both must come from the same validated expansion.
+1. Copy `src/data/publicSchedule.ts` to a temporary working file outside version control.
+2. Replace the term dates and configuration ID.
+3. Enter the new meeting patterns with stable IDs, weekdays, campus times, destinations, and rooms.
+4. Enter every official academic-calendar exception, including no-class and replacement-weekday dates.
+5. Add or revise approximate building points with a candid confidence label and navigation note. Never invent a door or indoor route.
+6. Keep all identity information out of the configuration. No name, ID, email address, or dorm room is needed.
+7. Replace `src/data/publicSchedule.ts` with the reviewed configuration.
+8. Add or update deterministic public acceptance tests and confirm the expanded event counts.
+9. If an optional calendar is wanted, copy the ignored private seed, keep it synchronized with the public configuration, and run `npm run private:generate`.
+10. Run `npm run check` and, when the ignored seed exists, `npm run private:verify`.
+11. Review the production build and privacy-check output.
+12. Push to `main` and wait for GitHub Pages deployment.
+
+Because the timetable is public, do not put anything in course titles, configuration labels, pattern IDs, or notes that identifies the student. If private per-person schedules are needed in the future, that is a different product model and requires an explicit privacy redesign.

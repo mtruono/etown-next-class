@@ -1,15 +1,12 @@
 import { expect, test } from "@playwright/test";
 
-import {
-  importSyntheticSchedule,
-  installSyntheticGeolocation,
-} from "./helpers";
+import { installCampusGeolocation, openPublicSchedule } from "./helpers";
 
-test("location is requested only after a route action and links require a second tap", async ({
+test("location is requested only after Campus guide and stays in-app", async ({
   page,
 }) => {
-  await installSyntheticGeolocation(page);
-  await importSyntheticSchedule(page);
+  await installCampusGeolocation(page);
+  await openPublicSchedule(page);
   expect(
     await page.evaluate(
       () => (window as Window & { __geoCalls?: number }).__geoCalls,
@@ -17,7 +14,7 @@ test("location is requested only after a route action and links require a second
   ).toBe(0);
 
   await page
-    .getByRole("button", { name: /Directions to Example Science Center/u })
+    .getByRole("button", { name: /Campus guide to Nicarry Hall/u })
     .click();
   expect(
     await page.evaluate(
@@ -25,16 +22,16 @@ test("location is requested only after a route action and links require a second
     ),
   ).toBe(1);
 
-  const campusLink = page.getByRole("link", {
-    name: /Etown Campus Map walking directions/u,
-  });
-  await expect(campusLink).toBeVisible();
-  await expect(campusLink).toHaveAttribute("href", /type:walking;ada:false/u);
-  await expect(page.getByText("Room A12")).toBeVisible();
+  await expect(
+    page.getByRole("img", { name: /Campus orientation to Nicarry Hall/u }),
+  ).toBeVisible();
+  await expect(page.getByText("Room 202")).toBeVisible();
+  await expect(page.getByText(/straight line/u)).toBeVisible();
+  await expect(page.locator("main a[href]")).toHaveCount(0);
   await expect(page).toHaveURL("/");
 });
 
-test("denied location provides explicit fallbacks", async ({ page }) => {
+test("denied location provides in-app fallbacks", async ({ page }) => {
   await page.addInitScript(() => {
     Object.defineProperty(navigator, "geolocation", {
       configurable: true,
@@ -54,9 +51,9 @@ test("denied location provides explicit fallbacks", async ({ page }) => {
       },
     });
   });
-  await importSyntheticSchedule(page);
+  await openPublicSchedule(page);
   await page
-    .getByRole("button", { name: /Directions to Example Science Center/u })
+    .getByRole("button", { name: /Campus guide to Nicarry Hall/u })
     .click();
   await expect(
     page.getByRole("heading", { name: "Location was not available" }),
@@ -65,8 +62,6 @@ test("denied location provides explicit fallbacks", async ({ page }) => {
     page.getByRole("button", { name: "Preview from Founders B" }),
   ).toBeVisible();
   await expect(
-    page.getByRole("button", {
-      name: "Open destination without a starting point",
-    }),
+    page.getByRole("button", { name: "Show only the destination" }),
   ).toBeVisible();
 });

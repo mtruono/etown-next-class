@@ -99,8 +99,8 @@ function meetingCard(
     !isVirtual && options.directions !== false
       ? actionButton(
           heading === "Current class"
-            ? "Directions to current class"
-            : `Directions to ${destination.displayName}, Room ${meeting.room}`,
+            ? "Campus guide to current class"
+            : `Campus guide to ${destination.displayName}, Room ${meeting.room}`,
           () => actions.directions(meeting),
           {
             className:
@@ -198,7 +198,7 @@ export function renderSchedule(
     main.append(
       element("p", {
         className: "offline-banner",
-        text: "You are offline. Your schedule still works, but external walking directions require an internet connection.",
+        text: "You are offline. The schedule and in-app campus schematic still work. GPS availability and accuracy depend on the phone.",
         attributes: { role: "status" },
       }),
     );
@@ -312,7 +312,7 @@ export function renderSchedule(
     if (state.afterLastClassToday && state.next) {
       main.append(
         actionButton(
-          "Preview tomorrow’s route from Founders B",
+          "Preview tomorrow from Founders B",
           () => actions.previewFromHome(state.next!),
           {
             className: "button button-secondary",
@@ -325,9 +325,9 @@ export function renderSchedule(
 
   root.append(
     viewShell("Etown Next Class", main, {
-      headerAction: actionButton("Settings", actions.openSettings, {
+      headerAction: actionButton("Info", actions.openSettings, {
         className: "button button-header",
-        ariaLabel: "Open settings",
+        ariaLabel: "Open app details",
       }),
     }),
   );

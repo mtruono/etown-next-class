@@ -1,20 +1,11 @@
-import type {
-  AppConfiguration,
-  Destination,
-  RouteProviderId,
-} from "../domain/types";
 import type { DirectionSession } from "../app/appState";
+import type { AppConfiguration, Destination } from "../domain/types";
 import {
-  buildProviderUrl,
-  campusSearchUrl,
-  liveCampusMapUrl,
-  ROUTE_BUILDING_WARNING,
-  ROUTE_CAPTURE_EXPLANATION,
-  routeProviders,
-  toRouteDestination,
-} from "../routes/routeService";
-import type { RouteOrigin } from "../routes/types";
-import { actionButton, element, externalLink, viewShell } from "./elements";
+  campusGuidance,
+  createCampusOrientationMap,
+  type CampusMapOrigin,
+} from "../map/campusMap";
+import { actionButton, element, viewShell } from "./elements";
 
 export interface DirectionsActions {
   back(): void;
@@ -24,51 +15,95 @@ export interface DirectionsActions {
   useDestinationOnly(): void;
 }
 
-function providerLinkLabel(provider: RouteProviderId): string {
-  if (provider === "concept3d") return "Etown Campus Map walking directions";
-  if (provider === "apple") return "Apple Maps walking directions";
-  return "Google Maps walking directions";
+function roundedDistance(meters: number): string {
+  if (meters < 1000) return `${Math.max(1, Math.round(meters / 5) * 5)} m`;
+  return `${(meters / 1000).toFixed(meters < 10_000 ? 1 : 0)} km`;
 }
 
-function providerLinks(
+function orientationPanel(
   configuration: AppConfiguration,
-  preferred: RouteProviderId,
-  origin: RouteOrigin | null,
   destination: Destination,
   room: string,
-  allowedProviders: RouteProviderId[] = ["concept3d", "apple", "google"],
+  origin: CampusMapOrigin | null,
+  disclosure: string | null,
 ): HTMLElement {
-  const routeDestination = toRouteDestination(destination, room);
-  const ordered = [
-    preferred,
-    ...allowedProviders.filter((provider) => provider !== preferred),
-  ].filter(
-    (provider, index, values) =>
-      allowedProviders.includes(provider) && values.indexOf(provider) === index,
+  const panel = element(
+    "section",
+    { className: "panel map-panel" },
+    element("h2", { text: "Campus orientation" }),
+    element("p", {
+      className: "map-purpose",
+      text: origin
+        ? `From ${origin.name} toward ${destination.displayName}, Room ${room}`
+        : `${destination.displayName}, Room ${room}`,
+    }),
+    createCampusOrientationMap(configuration, destination, room, origin),
   );
-  const providerDefinitions = routeProviders(configuration);
-  const container = element("div", { className: "route-links" });
-  ordered.forEach((providerId, index) => {
-    const provider = providerDefinitions[providerId];
-    const link = externalLink(
-      providerLinkLabel(providerId),
-      buildProviderUrl(configuration, providerId, origin, routeDestination),
-      index === 0 ? "button button-primary" : "button button-secondary",
+  if (origin) {
+    const guidance = campusGuidance(origin, destination);
+    panel.append(
+      element("p", {
+        className: "orientation-summary",
+        text: `About ${roundedDistance(guidance.distanceMeters)} ${guidance.compassDirection} in a straight line.`,
+      }),
     );
-    link.setAttribute(
-      "aria-label",
-      `${provider.label} walking directions to ${destination.displayName}, Room ${room}`,
+  }
+  if (disclosure) {
+    panel.append(element("p", { className: "notice", text: disclosure }));
+  }
+  panel.append(
+    element("p", {
+      className: "map-disclaimer",
+      text: "This is an original schematic, not a turn-by-turn route. The line is straight-line orientation only and may cross buildings or other obstacles.",
+    }),
+  );
+  return panel;
+}
+
+function fallbackPanel(
+  lastBuilding: Destination | null,
+  homeFallback: Destination,
+  actions: DirectionsActions,
+): HTMLElement {
+  const panel = element(
+    "section",
+    { className: "panel" },
+    element("h2", { text: "Choose a starting point" }),
+  );
+  if (lastBuilding) {
+    panel.append(
+      actionButton(
+        `Start at last class: ${lastBuilding.displayName}`,
+        () =>
+          actions.useFallback(
+            lastBuilding,
+            `This assumes you are still near ${lastBuilding.displayName}. It is not your live location.`,
+          ),
+        { className: "button button-secondary" },
+      ),
     );
-    container.append(link);
-  });
-  return container;
+  }
+  panel.append(
+    actionButton(
+      "Preview from Founders B",
+      () =>
+        actions.useFallback(
+          homeFallback,
+          "Founders B is an approximate B/C building-center fallback, not your live location or a verified doorway.",
+        ),
+      { className: "button button-secondary" },
+    ),
+    actionButton("Show only the destination", actions.useDestinationOnly, {
+      className: "button button-quiet",
+    }),
+  );
+  return panel;
 }
 
 export function renderDirections(
   root: HTMLElement,
   configuration: AppConfiguration,
   session: DirectionSession,
-  preferred: RouteProviderId,
   online: boolean,
   lastBuilding: Destination | null,
   homeFallback: Destination,
@@ -78,26 +113,29 @@ export function renderDirections(
   const destination = configuration.destinations.find(
     (candidate) => candidate.id === session.meeting.destinationId,
   );
-  if (!destination) throw new Error("Route destination is missing");
+  if (!destination) throw new Error("Destination is missing");
 
   const main = element("main", { className: "content-stack" });
   main.append(
     element(
       "section",
       { className: "route-handoff" },
-      element("p", { className: "card-label", text: "Walking directions" }),
+      element("p", { className: "card-label", text: "Next destination" }),
       element("h2", { className: "building", text: destination.displayName }),
       element("p", { className: "room", text: `Room ${session.meeting.room}` }),
       element("p", { text: session.meeting.courseCode }),
     ),
-    element("p", { className: "route-warning", text: ROUTE_BUILDING_WARNING }),
+    element("p", {
+      className: "route-warning",
+      text: "The marker represents an approximate building area, not a verified entrance or classroom location. Confirm the room using building signs.",
+    }),
   );
 
   if (!online) {
     main.append(
       element("p", {
         className: "offline-banner",
-        text: "External walking directions require an internet connection. Your schedule remains available offline.",
+        text: "You are offline. The schedule and campus schematic still work. GPS availability and accuracy depend on the phone.",
         attributes: { role: "status" },
       }),
     );
@@ -109,55 +147,57 @@ export function renderDirections(
         "section",
         { className: "panel", attributes: { "aria-live": "polite" } },
         element("h2", { text: "Finding your current location…" }),
-        element("p", { text: "This one-time request is not stored." }),
+        element("p", {
+          text: "This one-time position stays in this app’s memory and is never saved.",
+        }),
       ),
     );
   } else if (session.failureMessage) {
     main.append(
+      orientationPanel(
+        configuration,
+        destination,
+        session.meeting.room,
+        null,
+        null,
+      ),
       element(
         "section",
-        { className: "panel" },
+        { className: "panel warning-panel" },
         element("h2", { text: "Location was not available" }),
         element("p", { text: session.failureMessage }),
         actionButton("Try location again", actions.retry, {
           className: "button button-primary",
         }),
       ),
+      fallbackPanel(lastBuilding, homeFallback, actions),
     );
   } else if (session.capturedPosition && session.assessment?.offCampus) {
-    const origin: RouteOrigin = {
-      latitude: session.capturedPosition.latitude,
-      longitude: session.capturedPosition.longitude,
-      name: "Current Location",
-    };
     main.append(
+      orientationPanel(
+        configuration,
+        destination,
+        session.meeting.room,
+        null,
+        null,
+      ),
       element(
         "section",
         { className: "panel warning-panel" },
         element("h2", { text: "You appear to be off campus" }),
         element("p", {
-          text: "The College map is intended for campus routes. Your current location will not be sent to its wayfinding network unless you choose a campus fallback.",
+          text: "The live point is outside the campus area, so it is not plotted on this close-up schematic. Your position has not been stored or sent to a map provider.",
         }),
         session.assessment.lowAccuracy
           ? element("p", {
-              text: `The location is also imprecise, with approximate accuracy of ${Math.round(session.capturedPosition.accuracyMeters)} meters.`,
+              text: `The reported approximate accuracy is ${Math.round(session.capturedPosition.accuracyMeters)} meters.`,
             })
           : null,
-        providerLinks(
-          configuration,
-          preferred,
-          origin,
-          destination,
-          session.meeting.room,
-          ["apple", "google"],
-        ),
         actionButton("Try location again", actions.retry, {
           className: "button button-secondary",
         }),
-        actionButton("Cancel", actions.back, {
-          className: "button button-quiet",
-        }),
       ),
+      fallbackPanel(lastBuilding, homeFallback, actions),
     );
   } else if (
     session.capturedPosition &&
@@ -165,28 +205,38 @@ export function renderDirections(
     !session.acceptedLowAccuracy
   ) {
     main.append(
+      orientationPanel(
+        configuration,
+        destination,
+        session.meeting.room,
+        null,
+        null,
+      ),
       element(
         "section",
         { className: "panel warning-panel" },
         element("h2", { text: "Location accuracy is limited" }),
         element("p", {
-          text: `Indoor campus GPS can be imprecise. The reported approximate accuracy is ${Math.round(session.capturedPosition.accuracyMeters)} meters.`,
+          text: `Indoor GPS can be imprecise. The reported approximate accuracy is ${Math.round(session.capturedPosition.accuracyMeters)} meters.`,
         }),
         actionButton("Try again", actions.retry, {
           className: "button button-primary",
         }),
-        actionButton("Continue with this location", actions.acceptLowAccuracy, {
-          className: "button button-secondary",
-        }),
+        actionButton(
+          "Use this approximate location",
+          actions.acceptLowAccuracy,
+          { className: "button button-secondary" },
+        ),
       ),
+      fallbackPanel(lastBuilding, homeFallback, actions),
     );
   } else {
-    let origin: RouteOrigin | null = session.fixedOrigin;
+    let origin: CampusMapOrigin | null = session.fixedOrigin;
     if (session.capturedPosition) {
       origin = {
         latitude: session.capturedPosition.latitude,
         longitude: session.capturedPosition.longitude,
-        name: "Current Location",
+        name: "You are here",
       };
     }
     if (session.destinationOnly) origin = null;
@@ -195,100 +245,36 @@ export function renderDirections(
       main.append(
         element("p", {
           className: "near-banner",
-          text: `You appear to be at or near ${destination.displayName}. Your room is ${session.meeting.room}. This uses straight-line proximity, not walking-route distance.`,
+          text: `You appear to be at or near ${destination.displayName}. Your room is ${session.meeting.room}. This is straight-line proximity, not walking distance.`,
         }),
-      );
-    }
-    if (session.originDisclosure) {
-      main.append(
-        element("p", { className: "notice", text: session.originDisclosure }),
       );
     }
     main.append(
-      element(
-        "section",
-        { className: "panel" },
-        element("h2", { text: "Choose a map" }),
-        element("p", { text: ROUTE_CAPTURE_EXPLANATION }),
-        providerLinks(
-          configuration,
-          preferred,
-          origin,
-          destination,
-          session.meeting.room,
-        ),
-        element("p", {
-          className: "help-text",
-          text: "Google may have less complete knowledge of internal campus paths than the College map.",
-        }),
+      orientationPanel(
+        configuration,
+        destination,
+        session.meeting.room,
+        origin,
+        session.originDisclosure,
       ),
     );
-  }
-
-  if (
-    !session.requesting &&
-    (!session.fixedOrigin ||
-      session.failureMessage ||
-      session.assessment?.offCampus ||
-      (session.assessment?.lowAccuracy && !session.acceptedLowAccuracy))
-  ) {
-    const fallbacks = element(
-      "section",
-      { className: "panel" },
-      element("h2", { text: "Starting-point fallbacks" }),
-    );
-    if (lastBuilding) {
-      fallbacks.append(
-        actionButton(
-          `Use last scheduled building: ${lastBuilding.displayName}`,
-          () =>
-            actions.useFallback(
-              lastBuilding,
-              `This preview assumes you are still near ${lastBuilding.displayName}. It is not your live location.`,
-            ),
-          { className: "button button-secondary" },
-        ),
+    if (session.destinationOnly) {
+      main.append(
+        actionButton("Use my current location", actions.retry, {
+          className: "button button-secondary",
+        }),
       );
     }
-    fallbacks.append(
-      actionButton(
-        "Preview from Founders B",
-        () =>
-          actions.useFallback(
-            homeFallback,
-            "Founders B is an approximate B/C building-center fallback, not your live location or a verified doorway.",
-          ),
-        { className: "button button-secondary" },
-      ),
-      actionButton(
-        "Open destination without a starting point",
-        actions.useDestinationOnly,
-        {
-          className: "button button-quiet",
-        },
-      ),
-    );
-    main.append(fallbacks);
   }
 
   main.append(
     element(
-      "section",
-      { className: "panel compact-links" },
-      element("h2", { text: "Official map options" }),
-      externalLink(
-        "Open building in official campus map",
-        campusSearchUrl(configuration, destination),
-      ),
-      externalLink("Open live campus map", liveCampusMapUrl(configuration)),
-    ),
-    element(
       "details",
       {},
-      element("summary", { text: "Route and coordinate details" }),
+      element("summary", { text: "Map and coordinate limits" }),
       element("p", { text: destination.navigationNote }),
       element("p", {
-        text: "Individual classroom positions, entrances, stairs, and hallways have not been verified. Confirm the room through building signs.",
+        text: "No entrance, indoor route, floor, stair, hallway, construction closure, or accessible path has been verified by this app.",
       }),
     ),
     actionButton("Back to schedule", actions.back, {
@@ -296,5 +282,5 @@ export function renderDirections(
     }),
   );
 
-  root.append(viewShell("Directions", main));
+  root.append(viewShell("Campus guide", main));
 }
