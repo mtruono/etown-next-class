@@ -15,7 +15,7 @@ export default defineConfig(({ command }) => ({
   },
   plugins: [
     VitePWA({
-      registerType: "prompt",
+      registerType: "autoUpdate",
       injectRegister: false,
       manifest: false,
       workbox: {

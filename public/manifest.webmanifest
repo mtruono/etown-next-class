@@ -1,7 +1,7 @@
 {
   "name": "Etown Campus Assistant",
   "short_name": "Etown Assistant",
-  "description": "A private, one-tap campus assistant for class and home navigation.",
+  "description": "A one-tap campus assistant for Fall 2026 class and home navigation.",
   "display": "standalone",
   "orientation": "portrait",
   "start_url": "./",

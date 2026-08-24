@@ -11,8 +11,6 @@ import "./styles.css";
 const root = document.querySelector<HTMLElement>("#app");
 if (!root) throw new Error("Application root is missing");
 
-let controller: AppController | null = null;
-
 function start(): void {
   const configurationStore = createConfigurationStore(window.localStorage);
   const demonstration = new URLSearchParams(window.location.search).has("demo");
@@ -34,7 +32,7 @@ function start(): void {
   });
   void telemetry.appOpenOnce();
 
-  controller = new AppController(
+  const controller = new AppController(
     root!,
     undefined,
     configuration,
@@ -45,12 +43,6 @@ function start(): void {
   controller.start();
 }
 
-const updateServiceWorker = registerSW({
-  onNeedRefresh() {
-    controller?.setUpdateAvailable(async () => {
-      await updateServiceWorker?.(true);
-    });
-  },
-});
+registerSW({ immediate: true });
 
 start();

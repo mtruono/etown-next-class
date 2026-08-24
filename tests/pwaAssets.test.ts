@@ -56,4 +56,11 @@ describe("PWA assets", () => {
     expect(html).not.toMatch(/<script(?![^>]*\bsrc=)[^>]*>/u);
     expect(html).not.toMatch(/https?:\/\/[^"']+\.(?:js|css)/u);
   });
+
+  it("automatically activates future app updates", async () => {
+    const config = await readFile("vite.config.ts", "utf8");
+    const main = await readFile("src/main.ts", "utf8");
+    expect(config).toContain('registerType: "autoUpdate"');
+    expect(main).toContain("registerSW({ immediate: true })");
+  });
 });
