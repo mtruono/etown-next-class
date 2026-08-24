@@ -8,9 +8,9 @@ The website does not include a student name, student ID, email address, phone nu
 
 ## Location
 
-Location is requested only after **Take me to class** or **Take me home** is tapped. One captured point and its accuracy are kept in memory only long enough to classify on-campus versus off-campus and, when appropriate, construct a Concept3D route. The app never places coordinates or accuracy in local storage, IndexedDB, telemetry, logs, error reports, or background location watches.
+Location is requested only after **Take me to class** or **Take me home** is tapped. One captured point and its accuracy are kept in memory only long enough to classify on-campus versus off-campus and, when appropriate, construct the in-app Concept3D route. The assistant never places coordinates or accuracy in local storage, IndexedDB, telemetry, logs, or error reports.
 
-For Apple Maps and Google Maps, the app omits the origin so the selected map can use “here.” For a confidently on-campus Concept3D route, the captured starting point is handed to Etown’s official campus-map provider. Map providers have their own privacy practices. A no-referrer policy is used where supported.
+For a confidently on-campus route, the captured starting point is handed to Etown’s official Concept3D map inside a no-referrer iframe. The embedded map’s location arrow can request live location for its blue dot; that behavior belongs to the official map provider and stops when its map is closed. For Apple Maps and Google Maps, the assistant omits the origin so the selected map can use “here.” Map providers have their own privacy practices.
 
 ## Anonymous usage sharing
 

@@ -74,7 +74,7 @@ describe("application controller", () => {
     controller.destroy();
   });
 
-  it("requests geolocation only after navigation and launches Concept3D on campus", async () => {
+  it("requests geolocation only after navigation and keeps the campus route in the app", async () => {
     const getCalls = installGeolocation();
     const launched: string[] = [];
     const root = document.createElement("div");
@@ -91,10 +91,17 @@ describe("application controller", () => {
     controller.start();
     expect(getCalls()).toBe(0);
     buttonNamed(root, /TAKE ME TO CLASS/u).click();
-    await vi.waitFor(() => expect(launched).toHaveLength(1));
+    await vi.waitFor(() =>
+      expect(root.querySelector("iframe")?.getAttribute("src")).toContain(
+        "map.concept3d.com",
+      ),
+    );
     expect(getCalls()).toBe(1);
-    expect(launched[0]).toContain("map.concept3d.com");
-    expect(launched[0]).toContain("type:walking");
+    expect(launched).toHaveLength(0);
+    expect(root.querySelector("iframe")?.getAttribute("src")).toContain(
+      "type:walking",
+    );
+    expect(root.textContent).toContain("Indoor directions are not included");
     controller.destroy();
   });
 
@@ -114,8 +121,14 @@ describe("application controller", () => {
     );
     controller.start();
     buttonNamed(root, /TAKE ME HOME/u).click();
-    await vi.waitFor(() => expect(launched).toHaveLength(1));
-    expect(decodeURIComponent(launched[0]!)).toContain("Example Residence");
+    await vi.waitFor(() =>
+      expect(
+        decodeURIComponent(
+          root.querySelector("iframe")?.getAttribute("src") ?? "",
+        ),
+      ).toContain("Example Residence"),
+    );
+    expect(launched).toHaveLength(0);
     controller.destroy();
   });
 

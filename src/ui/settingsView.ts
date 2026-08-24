@@ -41,7 +41,11 @@ export function renderSettings(
       id: "campus-provider",
       attributes: { "aria-describedby": "campus-help" },
     },
-    option("concept3d", "Etown Campus Map", preferences.campus === "concept3d"),
+    option(
+      "concept3d",
+      "In-app Etown Campus Map",
+      preferences.campus === "concept3d",
+    ),
     option(
       "external",
       "Use my external map",
@@ -103,7 +107,7 @@ export function renderSettings(
       element("p", {
         id: "campus-help",
         className: "help-text",
-        text: "Etown Campus Map is the default when your location is confidently on campus.",
+        text: "The in-app Etown map is the default on campus. It keeps the route, surrounding buildings, and turn list inside the assistant.",
       }),
       element("label", {
         text: "Off-campus map",

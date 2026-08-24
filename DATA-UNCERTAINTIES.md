@@ -4,5 +4,6 @@
 - The fallback radius is a provider-selection heuristic, not a statement about college property lines.
 - Classroom destinations are building-level points. Individual rooms, entrances, indoor paths, stairs, elevators, and accessible routes are not verified.
 - Founders B remains an unverified area destination. Official residence information confirms the B/C shared-lounge structure, but the useful route endpoint must be physically tested.
+- Concept3D supplies the displayed outdoor path and turn list, but the important walks have not yet been physically verified. The app does not call them safe, accessible, exact, or officially approved.
 - Esbenshade remains the least-certain configured classroom point and requires phone verification.
 - Construction, closures, weather, and temporary campus path changes are outside the saved configuration. Follow posted signs and campus safety guidance.

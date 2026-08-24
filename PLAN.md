@@ -4,8 +4,8 @@
 
 - Personal-assistant first viewport with permanent class and home actions.
 - Shared `NavigationTarget` and one-tap routing service for class and home.
-- Conservative on-campus classification and real map handoff.
-- Private fragment setup and local schedule storage.
+- Conservative on-campus classification and an embedded official Etown walking route, with external-map fallbacks.
+- Public Fall 2026 schedule with no login or setup link.
 - Optional privacy-safe telemetry Worker and protected owner dashboard.
 - Collapsed daily/weekly schedule, offline schedule shell, settings, deletion, accessibility, privacy checks, and automated tests.
 

@@ -24,10 +24,10 @@ export function renderAbout(root: HTMLElement, back: () => void): void {
       { className: "panel" },
       element("h2", { text: "Real walking maps" }),
       element("p", {
-        text: "When you appear to be on campus, the assistant normally hands the route to Etown’s official Concept3D map. Off campus, it opens Apple Maps or Google Maps with only the destination so that map can use your current location.",
+        text: "When you appear to be on campus, Etown’s official Concept3D walking map opens inside the assistant with the route, surrounding campus buildings, and turn list. Apple Maps, Google Maps, and a full-screen Etown map remain available as backups.",
       }),
       element("p", {
-        text: "Map providers have their own privacy practices. The assistant uses same-tab handoff and a no-referrer policy where supported.",
+        text: "The embedded campus map may use location only after you start navigation and interact with its location control. Map providers have their own privacy practices; the assistant uses a no-referrer policy where supported.",
       }),
     ),
     element(

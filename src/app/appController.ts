@@ -151,10 +151,7 @@ export class AppController {
       this.state.configuration,
       provider,
       origin,
-      toRouteDestination(
-        destination,
-        session.target.kind === "class" ? session.target.room : undefined,
-      ),
+      toRouteDestination(destination),
     );
   }
 
@@ -163,23 +160,30 @@ export class AppController {
     provider: RouteProviderId,
   ): void {
     try {
-      const url = this.buildUrl(session, provider);
-      session.requesting = false;
-      session.failureMessage = null;
-      session.chosenProvider = provider;
-      session.launchUrl = url;
-      this.render();
-      void this.telemetry.track("map_launch_attempted", {
-        target: session.target.kind,
-        provider,
-      });
-      this.launchNavigation(url);
+      this.prepareSession(session, provider);
+      this.launchNavigation(session.launchUrl!);
     } catch {
       session.requesting = false;
       session.failureMessage =
         "Choose another map or try the navigation request again.";
       this.render();
     }
+  }
+
+  private prepareSession(
+    session: DirectionSession,
+    provider: RouteProviderId,
+  ): void {
+    const url = this.buildUrl(session, provider);
+    session.requesting = false;
+    session.failureMessage = null;
+    session.chosenProvider = provider;
+    session.launchUrl = url;
+    this.render();
+    void this.telemetry.track("map_launch_attempted", {
+      target: session.target.kind,
+      provider,
+    });
   }
 
   private async beginNavigation(target: NavigationTarget): Promise<void> {
@@ -229,7 +233,8 @@ export class AppController {
       tapTelemetry,
       new Promise<void>((resolve) => window.setTimeout(resolve, 250)),
     ]);
-    this.launchSession(session, provider);
+    if (provider === "concept3d") this.prepareSession(session, provider);
+    else this.launchSession(session, provider);
   }
 
   private renderUpdateBanner(): void {

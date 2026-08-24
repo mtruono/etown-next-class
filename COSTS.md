@@ -5,7 +5,7 @@ The design is intended to remain at $0 under current normal personal usage:
 - GitHub Pages: $0 under normal free repository usage.
 - Google Maps URLs: no API key; universal walking-direction links only.
 - Apple Maps links: no API key; standard map links only.
-- Etown Concept3D: opens the college’s existing public map through links; no map SDK or copied assets.
+- Etown Concept3D: embeds the college’s existing public map and keeps full-screen links as fallbacks; no map SDK, copied tiles, or paid API.
 - Cloudflare Worker and D1: optional anonymous telemetry intended to remain within Workers Free and D1 free allowances.
 - Custom domain: none.
 - Paid routing, tile, analytics, and app-store services: none.

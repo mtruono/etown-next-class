@@ -50,7 +50,7 @@ test("Take me home remains available during class, after class, and on no-class 
   }
 });
 
-test("on-campus home navigation opens a real Concept3D walking route", async ({
+test("on-campus home navigation keeps the Concept3D walking route inside the assistant", async ({
   page,
 }) => {
   await installGeolocation(page);
@@ -61,12 +61,15 @@ test("on-campus home navigation opens a real Concept3D walking route", async ({
     }),
   );
   await openAssistant(page);
-  const navigation = page.waitForURL(/map\.concept3d\.com/u);
   await page.getByRole("button", { name: /Take me home to/u }).click();
-  await navigation;
-  const url = decodeURIComponent(page.url());
+  const frame = page.locator("iframe[title*='Etown walking directions']");
+  await expect(frame).toBeVisible();
+  const url = decodeURIComponent((await frame.getAttribute("src")) ?? "");
   expect(url).toContain("type:walking");
   expect(url).toContain("Example Residence");
+  expect(page.url()).toContain("127.0.0.1:4173");
+  await expect(page.getByText("IN-APP CAMPUS ROUTE")).toBeVisible();
+  await expect(page.getByText(/surrounding buildings/u)).toBeVisible();
 });
 
 test("off-campus home navigation opens the selected external map without origin", async ({
@@ -116,12 +119,16 @@ test("class navigation uses the correct configured destination", async ({
     }),
   );
   await openAssistant(page);
-  const navigation = page.waitForURL(/map\.concept3d\.com/u);
   await page
     .getByRole("button", { name: /Take me to Example Science/u })
     .click();
-  await navigation;
-  expect(decodeURIComponent(page.url())).toContain("Room A12");
+  const frame = page.locator("iframe[title*='Example Science Center']");
+  await expect(frame).toBeVisible();
+  expect(decodeURIComponent((await frame.getAttribute("src")) ?? "")).toContain(
+    "Example Science Center",
+  );
+  expect(await frame.getAttribute("src")).not.toContain("Room");
+  await expect(page.getByText(/Classroom reminder: Room A12/u)).toBeVisible();
 });
 
 test("same-building transition keeps a small elsewhere action", async ({

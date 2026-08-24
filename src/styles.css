@@ -1703,6 +1703,52 @@ body {
   letter-spacing: 0.08em;
 }
 
+.in-app-route {
+  padding: 1rem;
+  text-align: left;
+}
+
+.in-app-route > h2,
+.in-app-route > .assistant-kicker,
+.in-app-route > .map-purpose {
+  margin-inline: 0.25rem;
+}
+
+.embedded-campus-map {
+  display: block;
+  width: 100%;
+  height: min(64vh, 36rem);
+  min-height: 28rem;
+  margin: 1rem 0;
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  background: #eef4ff;
+}
+
+.route-room-reminder,
+.route-verification-note {
+  margin: 0.75rem 0;
+  border-radius: 0.85rem;
+  padding: 0.75rem 0.9rem;
+}
+
+.route-room-reminder {
+  background: var(--blue-soft);
+  color: var(--navy);
+  font-weight: 750;
+}
+
+.route-verification-note {
+  border: 1px solid var(--warning-line);
+  background: var(--warning);
+  color: #6f5210;
+  font-size: 0.86rem;
+}
+
+.in-app-route .map-options {
+  margin-top: 0.85rem;
+}
+
 .route-warning,
 .virtual-banner {
   border: 0;

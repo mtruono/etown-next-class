@@ -15,6 +15,8 @@ The release is not fully accepted until this is completed on the student’s pho
 - [ ] Esbenshade route opens correctly
 - [ ] Steinman route opens correctly
 - [ ] Etown map shows an actual walking route
+- [ ] Etown map remains inside the assistant
+- [ ] Surrounding campus buildings and the turn list are visible
 - [ ] Begin Route or equivalent is available
 - [ ] Live location/blue dot is understandable
 - [ ] Back returns to the assistant
@@ -36,7 +38,8 @@ The release is not fully accepted until this is completed on the student’s pho
 - [ ] Low GPS accuracy
 - [ ] No internet
 - [ ] Google Maps not installed
-- [ ] App reopened after external map
+- [ ] Back returns from the in-app route to the schedule
+- [ ] App reopened after using a backup external map
 
 ## Telemetry
 

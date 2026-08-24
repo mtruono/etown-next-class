@@ -8,9 +8,9 @@ The app stays on GitHub Pages and requires no account, login, password, setup li
 
 - The first screen shows the current or next class, timing, building, room, **Take me to class**, and the permanent **Take me home · Founders B** action.
 - Today and This week are collapsed until requested.
-- A navigation tap requests one-shot location. Confidently on campus uses Etown’s Concept3D walking map by default; off campus or low accuracy uses Apple Maps on iPhone and Google Maps elsewhere unless Settings overrides it.
-- External maps receive the destination but no explicit origin. Concept3D receives the captured origin only for an on-campus preloaded route.
-- The former straight-line schematic is not part of the normal flow.
+- A navigation tap requests one-shot location. When the phone is confidently on campus, Etown’s official Concept3D walking route opens inside the assistant with surrounding buildings, the mapped path, turn list, and the map’s live-location control.
+- Apple Maps, Google Maps, and a full-screen Etown map remain available as backups. Off campus or with low location accuracy, the selected external map remains the practical default and receives the destination without an explicit origin.
+- The former straight-line schematic and its code have been removed. The in-app route follows Etown’s mapped wayfinding network.
 - The public schedule remains available offline after the app has loaded; live navigation requires connectivity.
 
 ## Public schedule and private identity

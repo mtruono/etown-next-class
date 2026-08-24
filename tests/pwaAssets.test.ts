@@ -52,6 +52,7 @@ describe("PWA assets", () => {
     expect(html).toContain('name="apple-mobile-web-app-capable"');
     expect(html).toContain('http-equiv="Content-Security-Policy"');
     expect(html).toContain("script-src 'self'");
+    expect(html).toContain("frame-src https://map.concept3d.com");
     expect(html).toContain('src="/src/main.ts"');
     expect(html).not.toMatch(/<script(?![^>]*\bsrc=)[^>]*>/u);
     expect(html).not.toMatch(/https?:\/\/[^"']+\.(?:js|css)/u);
