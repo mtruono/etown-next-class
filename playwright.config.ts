@@ -4,8 +4,10 @@ export default defineConfig({
   testDir: "./e2e",
   fullyParallel: true,
   forbidOnly: Boolean(process.env.CI),
-  retries: process.env.CI ? 2 : 0,
-  reporter: "html",
+  retries: 0,
+  workers: process.env.CI ? 4 : undefined,
+  timeout: 20_000,
+  reporter: process.env.CI ? "line" : "html",
   use: {
     baseURL: "http://127.0.0.1:4173",
     trace: "on-first-retry",
@@ -23,6 +25,11 @@ export default defineConfig({
   webServer: {
     command: "npm run build && npm run preview -- --host 127.0.0.1 --port 4173",
     url: "http://127.0.0.1:4173",
+    env: {
+      ...process.env,
+      GITHUB_REPOSITORY: "",
+      VITE_TELEMETRY_ENDPOINT: "http://127.0.0.1:4173/__telemetry",
+    },
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
   },

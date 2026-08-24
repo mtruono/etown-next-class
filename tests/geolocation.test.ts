@@ -94,6 +94,7 @@ describe("location decisions", () => {
       destination,
     );
     expect(lowNear).toMatchObject({
+      classification: "low-accuracy",
       lowAccuracy: true,
       offCampus: false,
       nearDestination: true,
@@ -104,6 +105,47 @@ describe("location decisions", () => {
       destination,
     );
     expect(offCampus.offCampus).toBe(true);
+    expect(offCampus.classification).toBe("off-campus");
+  });
+
+  it("uses the documented conservative Etown fallback radius", () => {
+    const configuration = syntheticConfiguration();
+    configuration.campus.campusCenter = {
+      latitude: 40.1503,
+      longitude: -76.5917,
+    };
+    configuration.campus.onCampusRadiusMeters = 550;
+    const destination = configuration.destinations[1]!;
+    const onCampusPoints = [
+      ["central campus", 40.1503, -76.5917],
+      ["Founders", 40.14861, -76.58961],
+      ["Nicarry", 40.15085, -76.59345],
+      ["Steinman", 40.15045, -76.59336],
+      ["Esbenshade", 40.15129, -76.59195],
+    ] as const;
+    for (const [, latitude, longitude] of onCampusPoints) {
+      expect(
+        assessCapturedLocation(
+          configuration,
+          { latitude, longitude, accuracyMeters: 25 },
+          destination,
+        ).classification,
+      ).toBe("on-campus");
+    }
+    expect(
+      assessCapturedLocation(
+        configuration,
+        { latitude: 40.156, longitude: -76.5917, accuracyMeters: 25 },
+        destination,
+      ).classification,
+    ).toBe("off-campus");
+    expect(
+      assessCapturedLocation(
+        configuration,
+        { latitude: 40.2, longitude: -76.5917, accuracyMeters: 25 },
+        destination,
+      ).classification,
+    ).toBe("off-campus");
   });
 
   it("offers last-building fallback only within three hours on the same day", () => {

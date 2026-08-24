@@ -17,8 +17,8 @@ describe("PWA assets", () => {
       icons: Array<{ src: string; sizes: string; purpose?: string }>;
     };
     expect(manifest).toMatchObject({
-      name: "Etown Next Class",
-      short_name: "Next Class",
+      name: "Etown Campus Assistant",
+      short_name: "Etown Assistant",
       display: "standalone",
       orientation: "portrait",
       start_url: "./",

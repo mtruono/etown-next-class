@@ -1,112 +1,125 @@
 import { Temporal } from "@js-temporal/polyfill";
 
 import { AppController } from "../src/app/appController";
-import { publicSchedule } from "../src/data/publicSchedule";
 import { syntheticConfiguration } from "./fixtures/syntheticConfiguration";
 
-function buttonNamed(root: HTMLElement, label: string): HTMLButtonElement {
-  const button = [...root.querySelectorAll("button")].find(
-    (candidate) => candidate.textContent?.trim() === label,
+function buttonNamed(root: HTMLElement, label: RegExp): HTMLButtonElement {
+  const button = [...root.querySelectorAll("button")].find((candidate) =>
+    label.test(candidate.textContent?.trim() ?? ""),
   );
   if (!button) throw new Error(`Button not found: ${label}`);
   return button;
 }
 
+function installGeolocation(
+  latitude = 39.95,
+  longitude = -75.16,
+): () => number {
+  let calls = 0;
+  Object.defineProperty(navigator, "geolocation", {
+    configurable: true,
+    value: {
+      getCurrentPosition(success: PositionCallback) {
+        calls += 1;
+        success({
+          coords: {
+            latitude,
+            longitude,
+            accuracy: 20,
+            altitude: null,
+            altitudeAccuracy: null,
+            heading: null,
+            speed: null,
+            toJSON: () => ({}),
+          },
+          timestamp: 1,
+          toJSON: () => ({}),
+        });
+      },
+    },
+  });
+  return () => calls;
+}
+
 describe("application controller", () => {
   beforeEach(() => {
     localStorage.clear();
-    history.replaceState(null, "", "/");
+    sessionStorage.clear();
     document.body.replaceChildren();
   });
 
-  it("opens directly to the built-in public schedule without a setup code", () => {
+  it("opens as a personal assistant with class and home actions", () => {
     const root = document.createElement("div");
     document.body.append(root);
     const controller = new AppController(
       root,
       () =>
         Temporal.ZonedDateTime.from(
-          "2026-08-23T12:00:00-04:00[America/New_York]",
-        ),
-      publicSchedule,
-    );
-    controller.start();
-
-    expect(root.textContent).toContain("MA251B");
-    expect(root.textContent).toContain("Nicarry Hall");
-    expect(root.textContent).toContain("Room 202");
-    expect(root.querySelector("#setup-code")).toBeNull();
-    expect(root.textContent).not.toContain("setup code");
-    expect(localStorage.length).toBe(0);
-    controller.destroy();
-  });
-
-  it("removes obsolete setup fragments without displaying their contents", () => {
-    history.replaceState(null, "", "/#setup=obsolete-private-value");
-    const root = document.createElement("div");
-    document.body.append(root);
-    const controller = new AppController(root, () =>
-      Temporal.ZonedDateTime.from(
-        "2026-08-23T12:00:00-04:00[America/New_York]",
-      ),
-    );
-    controller.start();
-    expect(window.location.hash).toBe("");
-    expect(root.textContent).not.toContain("obsolete-private-value");
-    controller.destroy();
-  });
-
-  it("does not request geolocation until Campus guide is tapped", async () => {
-    let geolocationCalls = 0;
-    Object.defineProperty(navigator, "geolocation", {
-      configurable: true,
-      value: {
-        getCurrentPosition(success: PositionCallback) {
-          geolocationCalls += 1;
-          success({
-            coords: {
-              latitude: 39.95,
-              longitude: -75.16,
-              accuracy: 20,
-              altitude: null,
-              altitudeAccuracy: null,
-              heading: null,
-              speed: null,
-              toJSON: () => ({}),
-            },
-            timestamp: 1,
-            toJSON: () => ({}),
-          });
-        },
-      },
-    });
-    const root = document.createElement("div");
-    document.body.append(root);
-    const controller = new AppController(
-      root,
-      () =>
-        Temporal.ZonedDateTime.from(
-          "2029-12-01T12:00:00-05:00[America/New_York]",
+          "2030-01-07T08:00:00-05:00[America/New_York]",
         ),
       syntheticConfiguration(),
     );
     controller.start();
-    expect(geolocationCalls).toBe(0);
-
-    buttonNamed(
-      root,
-      "Campus guide to Example Science Center, Room A12",
-    ).click();
-    await vi.waitFor(() =>
-      expect(root.querySelector("svg.campus-map")).not.toBeNull(),
+    expect(root.textContent).toContain("Etown Campus Assistant");
+    expect(root.textContent).toContain("Fictional Field Biology");
+    expect(buttonNamed(root, /TAKE ME TO CLASS/u)).toBeInstanceOf(
+      HTMLButtonElement,
     );
-    expect(geolocationCalls).toBe(1);
-    expect(root.querySelectorAll("a[href]")).toHaveLength(0);
-    expect(root.textContent).toContain("Room A12");
+    expect(buttonNamed(root, /TAKE ME HOME/u)).toBeInstanceOf(
+      HTMLButtonElement,
+    );
+    expect(
+      root.querySelector("details.schedule-disclosure")?.hasAttribute("open"),
+    ).toBe(false);
     controller.destroy();
   });
 
-  it("suppresses outdoor guidance for a same-building transition", () => {
+  it("requests geolocation only after navigation and launches Concept3D on campus", async () => {
+    const getCalls = installGeolocation();
+    const launched: string[] = [];
+    const root = document.createElement("div");
+    document.body.append(root);
+    const controller = new AppController(
+      root,
+      () =>
+        Temporal.ZonedDateTime.from(
+          "2030-01-07T08:00:00-05:00[America/New_York]",
+        ),
+      syntheticConfiguration(),
+      (url) => launched.push(url),
+    );
+    controller.start();
+    expect(getCalls()).toBe(0);
+    buttonNamed(root, /TAKE ME TO CLASS/u).click();
+    await vi.waitFor(() => expect(launched).toHaveLength(1));
+    expect(getCalls()).toBe(1);
+    expect(launched[0]).toContain("map.concept3d.com");
+    expect(launched[0]).toContain("type:walking");
+    controller.destroy();
+  });
+
+  it("uses the same navigation service for the home destination", async () => {
+    installGeolocation();
+    const launched: string[] = [];
+    const root = document.createElement("div");
+    document.body.append(root);
+    const controller = new AppController(
+      root,
+      () =>
+        Temporal.ZonedDateTime.from(
+          "2030-01-07T08:00:00-05:00[America/New_York]",
+        ),
+      syntheticConfiguration(),
+      (url) => launched.push(url),
+    );
+    controller.start();
+    buttonNamed(root, /TAKE ME HOME/u).click();
+    await vi.waitFor(() => expect(launched).toHaveLength(1));
+    expect(decodeURIComponent(launched[0]!)).toContain("Example Residence");
+    controller.destroy();
+  });
+
+  it("shows the same-building shortcut with an elsewhere action", () => {
     const configuration = syntheticConfiguration();
     configuration.meetingPatterns.push({
       id: "chem220x-m",
@@ -131,18 +144,11 @@ describe("application controller", () => {
     );
     controller.start();
     expect(root.textContent).toContain(
-      "Your last scheduled class and your next class are both in Example Science Center",
+      "Stay in Example Science Center and go to Room C21",
     );
-    expect(
-      [...root.querySelectorAll("button")].some((button) =>
-        button.textContent?.startsWith(
-          "Campus guide to Example Science Center",
-        ),
-      ),
-    ).toBe(false);
-    expect(
-      buttonNamed(root, "I’m somewhere else, use my location"),
-    ).toBeInstanceOf(HTMLButtonElement);
+    expect(buttonNamed(root, /I’m somewhere else/u)).toBeInstanceOf(
+      HTMLButtonElement,
+    );
     controller.destroy();
   });
 });

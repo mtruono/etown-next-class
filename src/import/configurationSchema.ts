@@ -152,7 +152,7 @@ const rawConfigurationSchema = z
             longitude: coordinate.min(-180).max(180),
           })
           .strict(),
-        onCampusRadiusMeters: z.number().finite().positive().max(100_000),
+        onCampusRadiusMeters: z.number().finite().positive().max(1_000),
       })
       .strict(),
     term: z
