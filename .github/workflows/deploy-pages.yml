@@ -54,12 +54,6 @@ jobs:
       - name: Run post-build privacy check
         run: npm run privacy:check
 
-      - name: Install browser test engines
-        run: npx playwright install --with-deps chromium webkit
-
-      - name: Run phone and desktop browser tests
-        run: npm run test:e2e
-
       - name: Configure GitHub Pages
         if: github.event_name != 'pull_request'
         uses: actions/configure-pages@v5
@@ -69,6 +63,12 @@ jobs:
         uses: actions/upload-pages-artifact@v3
         with:
           path: dist
+
+      - name: Install browser test engines
+        run: npx playwright install --with-deps chromium webkit
+
+      - name: Run phone and desktop browser tests
+        run: npm run test:e2e
 
   deploy:
     if: github.event_name != 'pull_request'
