@@ -9,6 +9,7 @@ export async function openAssistant(
   instant = new Date("2030-01-07T13:00:00Z"),
   configuration: AppConfiguration = syntheticConfiguration(),
   preferences: Record<string, string> = {},
+  disableServiceWorker = false,
 ): Promise<void> {
   await page.clock.install({ time: instant });
   await page.addInitScript(
@@ -26,7 +27,7 @@ export async function openAssistant(
       storedPreferences: preferences,
     },
   );
-  await page.goto("/?demo=1");
+  await page.goto(`/?demo=1${disableServiceWorker ? "&no-sw=1" : ""}`);
   await page.getByRole("heading", { name: "Etown Campus Assistant" }).waitFor();
 }
 

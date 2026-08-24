@@ -183,7 +183,7 @@ export class AppController {
   }
 
   private async beginNavigation(target: NavigationTarget): Promise<void> {
-    void this.telemetry.track(
+    const tapTelemetry = this.telemetry.track(
       target.kind === "home"
         ? "take_me_home_tapped"
         : "take_me_to_class_tapped",
@@ -225,6 +225,10 @@ export class AppController {
       void this.telemetry.track(failureEvent, { target: target.kind });
       provider = externalProvider(preferences.external, navigator.userAgent);
     }
+    await Promise.race([
+      tapTelemetry,
+      new Promise<void>((resolve) => window.setTimeout(resolve, 250)),
+    ]);
     this.launchSession(session, provider);
   }
 

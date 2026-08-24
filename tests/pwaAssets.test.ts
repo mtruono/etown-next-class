@@ -63,6 +63,7 @@ describe("PWA assets", () => {
     expect(config).toContain('registerType: "autoUpdate"');
     expect(config).toContain("skipWaiting: true");
     expect(config).toContain("clientsClaim: true");
+    expect(main).toContain('has("no-sw")');
     expect(main).toContain("registerSW({ immediate: true })");
   });
 });

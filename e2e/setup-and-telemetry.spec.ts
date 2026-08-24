@@ -43,7 +43,7 @@ test("configured startup sends app-open telemetry without private details", asyn
     bodies.push(route.request().postData() ?? "");
     await route.fulfill({ status: 204, body: "" });
   });
-  await openAssistant(page);
+  await openAssistant(page, undefined, undefined, undefined, true);
   await expect
     .poll(() => bodies.some((body) => body.includes("app_open")))
     .toBe(true);
@@ -59,9 +59,15 @@ test("Take me home sends only allowlisted telemetry dimensions", async ({
     bodies.push(route.request().postData() ?? "");
     await route.fulfill({ status: 204, body: "" });
   });
+  const appOpenFinished = page.waitForResponse(
+    (response) =>
+      response.url().endsWith("/__telemetry") &&
+      (response.request().postData() ?? "").includes("app_open"),
+  );
   await installGeolocation(page);
   await page.route("https://map.concept3d.com/**", (route) => route.abort());
-  await openAssistant(page);
+  await openAssistant(page, undefined, undefined, undefined, true);
+  await appOpenFinished;
   await page.getByRole("button", { name: /Take me home to/u }).click();
   await expect
     .poll(() => bodies.some((body) => body.includes("take_me_home_tapped")))
@@ -80,9 +86,15 @@ test("telemetry-disabled mode sends no events", async ({ page }) => {
     requests += 1;
     await route.fulfill({ status: 204, body: "" });
   });
-  await openAssistant(page, undefined, undefined, {
-    [TELEMETRY_ENABLED_STORAGE_KEY]: "false",
-  });
+  await openAssistant(
+    page,
+    undefined,
+    undefined,
+    {
+      [TELEMETRY_ENABLED_STORAGE_KEY]: "false",
+    },
+    true,
+  );
   await page.waitForTimeout(150);
   expect(requests).toBe(0);
 });

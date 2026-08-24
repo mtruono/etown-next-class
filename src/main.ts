@@ -43,6 +43,8 @@ function start(): void {
   controller.start();
 }
 
-registerSW({ immediate: true });
+if (!new URLSearchParams(window.location.search).has("no-sw")) {
+  registerSW({ immediate: true });
+}
 
 start();
