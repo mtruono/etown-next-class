@@ -4,11 +4,12 @@
   "main": "src/index.ts",
   "compatibility_date": "2026-08-01",
   "workers_dev": true,
+  "preview_urls": false,
   "d1_databases": [
     {
       "binding": "DB",
       "database_name": "etown-campus-assistant-telemetry",
-      "database_id": "REPLACE_AFTER_D1_CREATE",
+      "database_id": "a5d83c6a-3aac-4f56-8513-97fa555a6ff0",
       "migrations_dir": "migrations",
     },
   ],
