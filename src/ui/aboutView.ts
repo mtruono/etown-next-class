@@ -8,9 +8,12 @@ export function renderAbout(root: HTMLElement, back: () => void): void {
     element(
       "section",
       { className: "panel" },
-      element("h2", { text: "Private on this device" }),
+      element("h2", { text: "What is public and what stays private" }),
       element("p", {
-        text: "The private setup link saves the schedule only in this browser, then removes the setup information from the address. There is no account, password, or student login.",
+        text: "The Fall 2026 class schedule, times, buildings, rooms, calendar exceptions, and Founders B-area destination are built into this public website. There is no setup link, account, password, or student login.",
+      }),
+      element("p", {
+        text: "The website does not include a student name, ID number, email address, phone number, or dorm room number.",
       }),
       element("p", {
         text: "Location is requested only after you tap a navigation button. It is held briefly in memory to choose a map and is never saved by this app or sent to anonymous usage tracking.",

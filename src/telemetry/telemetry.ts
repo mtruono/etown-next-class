@@ -12,7 +12,6 @@ export const TELEMETRY_EVENT_NAMES = [
   "location_permission_denied",
   "location_timeout",
   "location_unavailable",
-  "setup_imported",
   "telemetry_disabled",
 ] as const;
 

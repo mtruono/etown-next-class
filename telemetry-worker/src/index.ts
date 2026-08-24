@@ -27,7 +27,6 @@ const allowedEvents = new Set([
   "location_permission_denied",
   "location_timeout",
   "location_unavailable",
-  "setup_imported",
   "telemetry_disabled",
 ]);
 const allowedTargets = new Set(["class", "home"]);

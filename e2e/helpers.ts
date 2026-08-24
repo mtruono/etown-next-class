@@ -26,7 +26,7 @@ export async function openAssistant(
       storedPreferences: preferences,
     },
   );
-  await page.goto("/");
+  await page.goto("/?demo=1");
   await page.getByRole("heading", { name: "Etown Campus Assistant" }).waitFor();
 }
 

@@ -2,7 +2,7 @@
 
 A mobile-first personal campus assistant for three immediate questions: where is the next class, when does it start, and can the phone take the student there or home?
 
-The app stays on GitHub Pages and requires no account, login, password, typed setup code, native wrapper, paid map API, or subscription. A personalized `#setup=...` link imports the private schedule into that browser once, removes the fragment from the visible address, and then uses the ordinary site URL.
+The app stays on GitHub Pages and requires no account, login, password, setup link, native wrapper, paid map API, or subscription. The ordinary public URL opens the complete Fall 2026 timetable immediately.
 
 ## Student experience
 
@@ -11,20 +11,13 @@ The app stays on GitHub Pages and requires no account, login, password, typed se
 - A navigation tap requests one-shot location. Confidently on campus uses Etown’s Concept3D walking map by default; off campus or low accuracy uses Apple Maps on iPhone and Google Maps elsewhere unless Settings overrides it.
 - External maps receive the destination but no explicit origin. Concept3D receives the captured origin only for an on-campus preloaded route.
 - The former straight-line schematic is not part of the normal flow.
-- The schedule remains locally available offline; live navigation requires connectivity.
+- The public schedule remains available offline after the app has loaded; live navigation requires connectivity.
 
-## Private setup
+## Public schedule and private identity
 
-Real schedule inputs and generated links live under ignored `private/`. Generate and verify them with:
+The committed `src/data/publicSchedule.ts` file contains the Fall 2026 courses, meeting times, buildings, rooms, calendar exceptions, and Founders B-area destination. It deliberately contains no student name, student ID, email, phone number, or dorm room number.
 
-```sh
-APP_URL=https://mtruono.github.io/etown-next-class/ npm run private:generate
-npm run private:verify
-```
-
-Send `private/generated/student-setup-url.txt` privately. Never commit or paste that URL into an issue or pull request. The production entry point contains no real timetable; `src/data/demoSchedule.ts` is deliberately fictional.
-
-Older public commits predate this change and may still contain the previous timetable. This project does not rewrite Git history automatically.
+The optional ignored `private/` tooling remains for local audits and calendar exports, but it is not part of app setup. `src/data/demoSchedule.ts` remains deliberately fictional for automated browser tests and the explicit `?demo=1` route.
 
 ## Development and verification
 
@@ -33,13 +26,12 @@ npm ci
 npm run check
 npx playwright install chromium webkit
 npm run test:e2e
-npm run private:verify
 cd telemetry-worker
 npm ci
 npm run check
 ```
 
-Use `http://127.0.0.1:5173/?demo=1` for a fictional local demonstration.
+Use `http://127.0.0.1:5173/?demo=1` for a fictional local demonstration. The ordinary URL always uses the public Fall 2026 schedule and ignores any old setup fragment.
 
 ## Anonymous telemetry
 

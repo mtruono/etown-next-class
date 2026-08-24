@@ -113,26 +113,12 @@ const scanFiles = [...new Set([...publicWorkingFiles, ...distFiles])].filter(
     existsSync(resolve(projectRoot, file)),
 );
 
-const denylistPath = resolve(projectRoot, "private/privacy-denylist.txt");
-const privateDenylist = existsSync(denylistPath)
-  ? readFileSync(denylistPath, "utf8")
-      .split(/\r?\n/u)
-      .map((value) => value.trim())
-      .filter((value) => value.length >= 3)
-  : [];
-
 for (const file of scanFiles) {
   const content = readFileSync(resolve(projectRoot, file), "utf8");
   if (/ETOWN1\.[A-Za-z0-9_-]{64,}\.[0-9a-f]{16}/u.test(content)) {
     failures.push(`Setup-code value embedded in ${file}`);
   }
   if (file.startsWith("dist/")) {
-    for (const privateValue of privateDenylist) {
-      if (content.includes(privateValue)) {
-        failures.push(`Private schedule value embedded in ${file}`);
-        break;
-      }
-    }
     if (/\bOlivia\b/iu.test(content)) {
       failures.push(`Student name embedded in ${file}`);
     }
@@ -173,6 +159,6 @@ if (failures.length) {
   process.exitCode = 1;
 } else {
   process.stdout.write(
-    `Privacy check passed (${tracked.length} tracked and ${scanFiles.length} public/build files). Private schedule values, generated setup artifacts, credentials, and live GPS data remain excluded.\n`,
+    `Privacy check passed (${tracked.length} tracked and ${scanFiles.length} public/build files). Student identity, generated setup artifacts, credentials, and live GPS data remain excluded; schedule details are intentionally public.\n`,
   );
 }

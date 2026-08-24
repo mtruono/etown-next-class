@@ -2,12 +2,12 @@
 
 The release is not fully accepted until this is completed on the student’s phone.
 
-## Private setup
+## Public opening
 
-- [ ] Personalized link imports schedule
-- [ ] URL fragment disappears
-- [ ] Ordinary site URL works afterward
-- [ ] No login or typed setup code
+- [ ] Ordinary site URL opens the complete Fall 2026 schedule
+- [ ] All classes, times, buildings, and rooms are visible
+- [ ] Founders B-area home action is visible
+- [ ] No login, setup link, or typed code
 
 ## Class route
 

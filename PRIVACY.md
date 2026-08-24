@@ -1,10 +1,10 @@
 # Privacy
 
-## Schedule setup and storage
+## Public schedule
 
-The owner creates one personalized URL containing a `#setup=...` fragment. On first open, the app immediately removes the fragment from the visible address, decodes and validates the configuration, and stores the schedule in browser local storage on that device. No login or student account is created. The real timetable is not imported by the production entry point or active production bundle.
+The ordinary website contains the complete Fall 2026 timetable: courses, meeting times, buildings, rooms, academic-calendar exceptions, and the Founders B-area destination. These details are intentionally public so the app opens immediately without a setup link, login, password, or student account.
 
-The private link must still be treated like private information. Browser history and messaging services may retain links outside this app. Do not post it publicly. Older public Git commits may contain the earlier timetable because history is not rewritten automatically.
+The website does not include a student name, student ID, email address, phone number, or dorm room number. Old `#setup=...` fragments are discarded and have no special effect.
 
 ## Location
 
@@ -14,12 +14,12 @@ For Apple Maps and Google Maps, the app omits the origin so the selected map can
 
 ## Anonymous usage sharing
 
-When configured and enabled, the app records only these anonymous events: app open, class/home navigation tap, map launch attempt, location permission denial/timeout/unavailability, setup import, and telemetry disabled. Allowed dimensions are target type, provider, app version, and a server-hashed random installation ID.
+When configured and enabled, the app records only these anonymous events: app open, class/home navigation tap, map launch attempt, location permission denial/timeout/unavailability, and telemetry disabled. Allowed dimensions are target type, provider, app version, and a server-hashed random installation ID.
 
 It does **not** send or store GPS location, accuracy, destination ID, building, course, course code, room, timetable, student name, email, dorm room, full URL, URL fragment, referrer, free-form errors, browser fingerprint, or user-agent string. The Worker does not write IP addresses or request headers to D1. Data older than 90 days is deleted during accepted writes.
 
-Sharing defaults on for this private personal tool and can be disabled in Settings. When disabled, no subsequent events are sent. If no endpoint is configured, telemetry is a safe no-op. There is no advertising analytics, session replay, heatmap, or cookie banner.
+Sharing defaults on and can be disabled in Settings. When disabled, no subsequent events are sent. If no endpoint is configured, telemetry is a safe no-op. There is no advertising analytics, session replay, heatmap, or cookie banner.
 
 ## Delete local data
 
-Settings → **Reset this app** → **Forget this schedule and app data** removes the saved configuration, provider choices, anonymous installation UUID, telemetry preference, and other application-prefixed browser storage. The app returns to the private-link recovery screen.
+Settings → **Reset this app** → **Reset app preferences** removes provider choices, the anonymous installation UUID, telemetry preference, and other application-prefixed browser storage. The public schedule remains available.

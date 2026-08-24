@@ -349,7 +349,7 @@ export function renderSchedule(
     main.append(
       element("p", {
         className: "offline-banner",
-        text: "You’re offline. Your saved schedule is still available; live navigation needs a connection.",
+        text: "You’re offline. The public schedule is still available; live navigation needs a connection.",
         attributes: { role: "status" },
       }),
     );

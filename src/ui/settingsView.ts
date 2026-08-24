@@ -142,9 +142,9 @@ export function renderSettings(
       element("summary", { text: "Reset this app" }),
       element("p", {
         className: "help-text",
-        text: "This removes the saved schedule, map choices, anonymous installation ID, and app preferences from this device.",
+        text: "This removes map choices, the anonymous installation ID, and app preferences from this device. The public Fall 2026 schedule stays available.",
       }),
-      actionButton("Forget this schedule and app data", actions.forgetAppData, {
+      actionButton("Reset app preferences", actions.forgetAppData, {
         className: "button button-danger",
       }),
     ),

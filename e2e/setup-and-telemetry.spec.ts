@@ -1,44 +1,38 @@
 import { expect, test } from "@playwright/test";
 
-import { encodeSetupCode } from "../src/import/setupCode";
-import { CONFIGURATION_STORAGE_KEY } from "../src/storage/configurationStore";
 import { TELEMETRY_ENABLED_STORAGE_KEY } from "../src/storage/preferenceStore";
-import { syntheticConfiguration } from "../tests/fixtures/syntheticConfiguration";
 import { installGeolocation, openAssistant } from "./helpers";
 
-test("private setup link imports locally, scrubs the hash, and ordinary link works afterward", async ({
+test("ordinary public link opens the complete Fall 2026 schedule", async ({
   page,
 }) => {
-  await page.clock.install({ time: new Date("2030-01-07T13:00:00Z") });
-  const code = await encodeSetupCode(syntheticConfiguration());
-  await page.goto(`/#setup=${encodeURIComponent(code)}`);
-  await expect(page).not.toHaveURL(/#setup=/u);
-  await expect(
-    page.getByRole("heading", { name: "Fictional Field Biology" }),
-  ).toBeVisible();
-  await expect
-    .poll(() =>
-      page.evaluate(
-        (key) => Boolean(localStorage.getItem(key)),
-        CONFIGURATION_STORAGE_KEY,
-      ),
-    )
-    .toBe(true);
+  await page.clock.install({ time: new Date("2026-08-24T13:00:00Z") });
   await page.goto("/");
   await expect(
-    page.getByRole("heading", { name: "Fictional Field Biology" }),
+    page.getByRole("heading", { name: "MA Probability and Statistics" }),
+  ).toBeVisible();
+  const primaryCard = page.locator(".assistant-card");
+  await expect(primaryCard.getByText("Nicarry Hall")).toBeVisible();
+  await expect(primaryCard.getByText("Room 202")).toBeVisible();
+  await page.getByText("This week").click();
+  await expect(page.getByText("CE Drawing I").first()).toBeVisible();
+  await expect(
+    page.getByText("Introduction to Health and Well-Being").first(),
+  ).toBeVisible();
+  await expect(
+    page.getByText("FYS Journey Into Your First Year").first(),
   ).toBeVisible();
 });
 
-test("invalid setup link shows the private-link recovery screen", async ({
+test("legacy setup fragments are discarded and do not gate the public schedule", async ({
   page,
 }) => {
+  await page.clock.install({ time: new Date("2026-08-24T13:00:00Z") });
   await page.goto("/#setup=broken");
   await expect(page).not.toHaveURL(/#setup=/u);
   await expect(
-    page.getByRole("heading", { name: "Open the private link you were sent" }),
+    page.getByRole("heading", { name: "MA Probability and Statistics" }),
   ).toBeVisible();
-  await expect(page.getByText(/could not be verified/u)).toBeVisible();
 });
 
 test("configured startup sends app-open telemetry without private details", async ({

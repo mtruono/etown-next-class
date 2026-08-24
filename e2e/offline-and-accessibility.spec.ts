@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test";
 
 import { openAssistant } from "./helpers";
 
-test("saved schedule remains readable offline and live navigation is explained", async ({
+test("public schedule remains readable offline and live navigation is explained", async ({
   context,
   page,
 }) => {
