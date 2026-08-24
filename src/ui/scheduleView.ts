@@ -66,12 +66,20 @@ function meetingCard(
 ): HTMLElement {
   const destination = meetingDestination(configuration, meeting);
   const isVirtual = meeting.modality === "virtual";
+  const stateClass =
+    heading === "Current class" ? " class-card-current" : " class-card-next";
   return element(
     "article",
-    { className: `class-card${options.primary ? " class-card-primary" : ""}` },
-    element("p", { className: "card-label", text: heading }),
-    element("h2", { text: meeting.courseCode }),
-    element("p", { className: "course-title", text: meeting.title }),
+    {
+      className: `class-card${stateClass}${options.primary ? " class-card-primary" : ""}`,
+    },
+    element(
+      "div",
+      { className: "card-topline" },
+      element("p", { className: "card-label", text: heading }),
+      element("p", { className: "course-code", text: meeting.courseCode }),
+    ),
+    element("h2", { className: "course-title", text: meeting.title }),
     isVirtual
       ? element("p", {
           className: "virtual-banner",
@@ -86,16 +94,20 @@ function meetingCard(
           }),
           element("p", { className: "room", text: `Room ${meeting.room}` }),
         ),
-    element("p", {
-      className: "class-time",
-      text: `${formatDateTime(meeting.start)}–${formatCampusTime(meeting.end)}`,
-    }),
-    heading === "Next class"
-      ? element("p", {
-          className: "countdown",
-          text: `Starts in ${countdown(meeting, state.campusNow)}`,
-        })
-      : null,
+    element(
+      "div",
+      { className: "class-meta" },
+      element("p", {
+        className: "class-time",
+        text: `${formatDateTime(meeting.start)}–${formatCampusTime(meeting.end)}`,
+      }),
+      heading === "Next class"
+        ? element("p", {
+            className: "countdown",
+            text: `In ${countdown(meeting, state.campusNow)}`,
+          })
+        : null,
+    ),
     !isVirtual && options.directions !== false
       ? actionButton(
           heading === "Current class"
@@ -140,8 +152,21 @@ function remainingSchedule(
   }
   return element(
     "section",
-    { className: "panel" },
-    element("h2", { text: "Today’s remaining schedule" }),
+    { className: "panel day-panel" },
+    element(
+      "div",
+      { className: "section-heading" },
+      element("h2", { text: "Today’s remaining schedule" }),
+      state.remainingToday.length
+        ? element("span", {
+            className: "meeting-count",
+            text: String(state.remainingToday.length),
+            attributes: {
+              "aria-label": `${state.remainingToday.length} meetings remaining`,
+            },
+          })
+        : null,
+    ),
     state.remainingToday.length
       ? list
       : element("p", { text: "Nothing else is scheduled today." }),
@@ -181,6 +206,7 @@ export function renderSchedule(
       },
       element("p", { text: formatCampusDate(state.campusNow) }),
       element("time", {
+        className: "campus-time",
         text: formatCampusTime(state.campusNow),
         attributes: { datetime: state.campusNow.toString() },
       }),
@@ -258,7 +284,7 @@ export function renderSchedule(
       main.append(
         element("p", {
           className: "current-summary",
-          text: `Current class ${state.current.courseCode}, ${currentDestination.displayName}, Room ${state.current.room}. Ends at ${formatCampusTime(state.current.end)}.`,
+          text: `In class now · ${currentDestination.displayName}, Room ${state.current.room} · Ends ${formatCampusTime(state.current.end)}`,
         }),
         meetingCard(
           configuration,

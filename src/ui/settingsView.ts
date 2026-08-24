@@ -22,34 +22,36 @@ export function renderSettings(
     { className: "content-stack" },
     element(
       "section",
-      { className: "panel" },
+      { className: "panel settings-hero" },
       element("p", { className: "status-pill", text: "Ready to use" }),
-      element("h2", { text: configuration.configurationLabel }),
+      element("h2", { text: "Your fall schedule is ready" }),
       element("p", {
-        text: `${courseCount} courses and ${meetings.length} class meetings are built into this public link. There is no login, setup code, or account.`,
+        className: "settings-lede",
+        text: `${courseCount} courses · ${meetings.length} class meetings · ${configuration.configurationLabel}`,
       }),
       element("p", {
         className: "help-text",
-        text: "Because this is the simple public version, anyone with the link can view the timetable. No student name, ID, email address, or other identity information is included.",
+        text: "No login, setup code, or account. Anyone with the link can view the timetable, but no student name, ID, email, or other identity information is included.",
       }),
     ),
     element(
       "section",
-      { className: "panel" },
+      { className: "panel info-card info-card-location" },
       element("h2", { text: "Location" }),
       element("p", {
-        text: "Location is never requested when the app opens. It is requested once only after you tap Campus guide.",
+        text: "Location stays off until Campus guide is tapped.",
       }),
       element("p", {
-        text: "The captured point is used in memory to draw the in-app orientation line. It is not saved, logged, or sent to Etown, Apple Maps, Google Maps, or this app’s server.",
+        className: "help-text",
+        text: "That one-time point draws the orientation line. It is not saved, logged, or sent to Etown, Apple Maps, Google Maps, or this app’s server.",
       }),
     ),
     element(
       "section",
-      { className: "panel" },
-      element("h2", { text: "Using this like an app" }),
+      { className: "panel info-card info-card-phone" },
+      element("h2", { text: "Put it on the Home Screen" }),
       element("p", {
-        text: "The link works directly in Safari or Chrome. Adding it to the iPhone Home Screen is optional and does not change the schedule.",
+        text: "It works directly in Safari or Chrome. Adding it to the iPhone Home Screen makes it feel like a regular app.",
       }),
     ),
     actionButton("About, privacy, and map limits", actions.showAbout, {

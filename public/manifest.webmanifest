@@ -1,14 +1,14 @@
 {
   "name": "Etown Next Class",
   "short_name": "Next Class",
-  "description": "A simple Fall 2026 class schedule with an original in-app campus orientation guide.",
+  "description": "Your next Elizabethtown class, building, room, and campus bearing at a glance.",
   "display": "standalone",
   "orientation": "portrait",
   "start_url": "./",
   "scope": "./",
   "lang": "en-US",
-  "theme_color": "#17324d",
-  "background_color": "#f5f2eb",
+  "theme_color": "#173b7a",
+  "background_color": "#f4f6fb",
   "icons": [
     {
       "src": "./icons/icon-192.png",

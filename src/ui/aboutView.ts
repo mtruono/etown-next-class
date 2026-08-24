@@ -36,17 +36,17 @@ export function renderAbout(root: HTMLElement, back: () => void): void {
     ),
     element(
       "section",
-      { className: "panel warning-panel" },
-      element("h2", { text: "Known location limits" }),
-      list,
+      { className: "panel info-card" },
+      element("h2", { text: "A simple campus bearing" }),
+      element("p", {
+        text: "The offline campus view points toward approximate building centers. It is a quick orientation aid—not turn-by-turn navigation or an indoor map.",
+      }),
     ),
     element(
-      "section",
-      { className: "panel" },
-      element("h2", { text: "What the map is" }),
-      element("p", {
-        text: "The campus view is an original, offline-capable orientation schematic made for this app. It uses approximate building-center points and a straight-line guide. It is not campus map imagery, turn-by-turn navigation, or an indoor map.",
-      }),
+      "details",
+      { className: "limits-details" },
+      element("summary", { text: "Known map limitations" }),
+      list,
     ),
     actionButton("Back", back, { className: "button button-quiet" }),
   );

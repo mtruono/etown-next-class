@@ -82,8 +82,8 @@ export function viewShell(
     { className: "app-header" },
     element(
       "div",
-      {},
-      element("p", { className: "eyebrow", text: "Unofficial campus helper" }),
+      { className: "brand-lockup" },
+      element("p", { className: "eyebrow", text: "ETOWN · FALL 2026" }),
       element("h1", { text: title }),
       options.subtitle
         ? element("p", { className: "header-subtitle", text: options.subtitle })
@@ -101,7 +101,7 @@ export function viewShell(
     "footer",
     { className: "app-footer" },
     element("p", {
-      text: "Unofficial personal navigation aid. Not affiliated with or endorsed by Elizabethtown College. Building pins are approximate. Confirm campus signs and official notices.",
+      text: "Unofficial campus companion · Building locations are approximate.",
     }),
   );
   fragment.append(header, main, footer);

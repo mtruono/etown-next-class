@@ -30,7 +30,7 @@ function orientationPanel(
   const panel = element(
     "section",
     { className: "panel map-panel" },
-    element("h2", { text: "Campus orientation" }),
+    element("h2", { text: "Campus bearing" }),
     element("p", {
       className: "map-purpose",
       text: origin
@@ -54,7 +54,7 @@ function orientationPanel(
   panel.append(
     element("p", {
       className: "map-disclaimer",
-      text: "This is an original schematic, not a turn-by-turn route. The line is straight-line orientation only and may cross buildings or other obstacles.",
+      text: "Orientation only—not a walking path. The straight line may cross buildings or other obstacles.",
     }),
   );
   return panel;
@@ -123,11 +123,14 @@ export function renderDirections(
       element("p", { className: "card-label", text: "Next destination" }),
       element("h2", { className: "building", text: destination.displayName }),
       element("p", { className: "room", text: `Room ${session.meeting.room}` }),
-      element("p", { text: session.meeting.courseCode }),
+      element("p", {
+        className: "route-course",
+        text: session.meeting.courseCode,
+      }),
     ),
     element("p", {
       className: "route-warning",
-      text: "The marker represents an approximate building area, not a verified entrance or classroom location. Confirm the room using building signs.",
+      text: "Building-level guide · Confirm the room once you’re inside.",
     }),
   );
 
@@ -145,7 +148,10 @@ export function renderDirections(
     main.append(
       element(
         "section",
-        { className: "panel", attributes: { "aria-live": "polite" } },
+        {
+          className: "panel location-loading",
+          attributes: { "aria-live": "polite" },
+        },
         element("h2", { text: "Finding your current location…" }),
         element("p", {
           text: "This one-time position stays in this app’s memory and is never saved.",
@@ -274,7 +280,7 @@ export function renderDirections(
       element("summary", { text: "Map and coordinate limits" }),
       element("p", { text: destination.navigationNote }),
       element("p", {
-        text: "No entrance, indoor route, floor, stair, hallway, construction closure, or accessible path has been verified by this app.",
+        text: "Entrances, indoor routes, stairs, construction closures, and accessible paths have not been verified by this app.",
       }),
     ),
     actionButton("Back to schedule", actions.back, {
