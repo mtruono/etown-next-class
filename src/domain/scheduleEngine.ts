@@ -138,6 +138,21 @@ export function getMeetingsForCampusDate(
   return meetings.filter((meeting) => meeting.campusDate === campusDate);
 }
 
+export function getMeetingsForCampusWeek(
+  meetings: readonly ExpandedMeeting[],
+  date: string | Temporal.PlainDate,
+): ExpandedMeeting[] {
+  const anchor =
+    typeof date === "string" ? Temporal.PlainDate.from(date) : date;
+  const monday = anchor.subtract({ days: anchor.dayOfWeek - 1 });
+  const sunday = monday.add({ days: 6 });
+  const start = monday.toString();
+  const end = sunday.toString();
+  return meetings.filter(
+    (meeting) => meeting.campusDate >= start && meeting.campusDate <= end,
+  );
+}
+
 export function getSameBuildingTransition(
   previous: ExpandedMeeting | null,
   next: ExpandedMeeting | null,

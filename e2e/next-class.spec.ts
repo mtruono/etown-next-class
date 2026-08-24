@@ -13,6 +13,23 @@ test("next class is prominent before the term", async ({ page }) => {
   await expect(nextCard.getByText("Room 202", { exact: true })).toBeVisible();
 });
 
+test("the home screen shows every class in the full current week", async ({
+  page,
+}) => {
+  await openPublicSchedule(page, new Date("2026-08-24T13:00:00Z"));
+  const week = page.locator(".week-panel");
+  await expect(week.getByRole("heading", { name: "This week" })).toBeVisible();
+  await expect(week.getByText("ART105A")).toHaveCount(2);
+  await expect(week.getByText("HE105C")).toHaveCount(2);
+  await expect(week.getByText("FYS100D")).toHaveCount(3);
+  await expect(week.getByText("MA251B")).toHaveCount(3);
+  await expect(week.getByText("Steinman Center · Room 108")).toHaveCount(2);
+  await expect(week.getByText("Esbenshade Hall · Room 360")).toHaveCount(2);
+  await expect(week.getByText("Nicarry Hall · Room 204")).toHaveCount(2);
+  await expect(week.getByText("Nicarry Hall · Room 131")).toHaveCount(1);
+  await expect(week.getByText("Nicarry Hall · Room 202")).toHaveCount(3);
+});
+
 test("same-building transition keeps the campus guide secondary", async ({
   page,
 }) => {
@@ -38,7 +55,9 @@ test("virtual replacement occurrence has no campus-guide action", async ({
   page,
 }) => {
   await openPublicSchedule(page, new Date("2026-11-25T17:00:00Z"));
-  await expect(page.getByText(/Virtual Friday schedule/u)).toBeVisible();
+  await expect(page.locator(".virtual-banner")).toContainText(
+    /Virtual Friday schedule/u,
+  );
   await expect(
     page.getByRole("button", { name: /Campus guide to/u }),
   ).toHaveCount(0);

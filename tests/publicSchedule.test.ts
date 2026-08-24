@@ -2,6 +2,7 @@ import { publicSchedule } from "../src/data/publicSchedule";
 import {
   expandSchedule,
   getMeetingsForCampusDate,
+  getMeetingsForCampusWeek,
 } from "../src/domain/scheduleEngine";
 
 describe("built-in public Fall 2026 schedule", () => {
@@ -45,5 +46,32 @@ describe("built-in public Fall 2026 schedule", () => {
     expect(
       meetings.filter((meeting) => meeting.campusDate > "2026-12-04"),
     ).toHaveLength(0);
+  });
+
+  it("returns every class in an ordinary Monday-through-Friday week", () => {
+    const week = getMeetingsForCampusWeek(meetings, "2026-08-24");
+    expect(week).toHaveLength(10);
+    expect(
+      Object.fromEntries(
+        ["ART105A", "HE105C", "FYS100D", "MA251B"].map((courseCode) => [
+          courseCode,
+          week.filter((meeting) => meeting.courseCode === courseCode).length,
+        ]),
+      ),
+    ).toEqual({ ART105A: 2, HE105C: 2, FYS100D: 3, MA251B: 3 });
+  });
+
+  it("applies holiday and virtual replacement rules to weekly views", () => {
+    const laborDayWeek = getMeetingsForCampusWeek(meetings, "2026-09-07");
+    expect(laborDayWeek).toHaveLength(9);
+    expect(
+      laborDayWeek.filter((meeting) => meeting.campusDate === "2026-09-07"),
+    ).toHaveLength(0);
+
+    const thanksgivingWeek = getMeetingsForCampusWeek(meetings, "2026-11-23");
+    expect(thanksgivingWeek).toHaveLength(5);
+    expect(
+      thanksgivingWeek.filter((meeting) => meeting.modality === "virtual"),
+    ).toHaveLength(1);
   });
 });

@@ -1,6 +1,11 @@
 import { Temporal } from "@js-temporal/polyfill";
 
-import { getSameBuildingTransition } from "../domain/scheduleEngine";
+import {
+  expandSchedule,
+  getMeetingsForCampusDate,
+  getMeetingsForCampusWeek,
+  getSameBuildingTransition,
+} from "../domain/scheduleEngine";
 import {
   formatCampusDate,
   formatCampusTime,
@@ -25,6 +30,10 @@ function displayTime(time: string): string {
   const value = Temporal.PlainTime.from(time);
   const hour = value.hour % 12 || 12;
   return `${hour}:${String(value.minute).padStart(2, "0")} ${value.hour >= 12 ? "PM" : "AM"}`;
+}
+
+function displayShortDate(date: Temporal.PlainDate): string {
+  return date.toLocaleString("en-US", { month: "short", day: "numeric" });
 }
 
 function countdown(
@@ -170,6 +179,126 @@ function remainingSchedule(
     state.remainingToday.length
       ? list
       : element("p", { text: "Nothing else is scheduled today." }),
+  );
+}
+
+function weeklySchedule(
+  configuration: AppConfiguration,
+  state: ScheduleState,
+): HTMLElement {
+  const anchor =
+    state.phase === "before-term" && state.next
+      ? state.next.start.toPlainDate()
+      : state.campusNow.toPlainDate();
+  const monday = anchor.subtract({ days: anchor.dayOfWeek - 1 });
+  const friday = monday.add({ days: 4 });
+  const meetings = getMeetingsForCampusWeek(
+    expandSchedule(configuration),
+    anchor,
+  );
+  const days = element("div", { className: "week-days" });
+
+  for (let offset = 0; offset < 5; offset += 1) {
+    const date = monday.add({ days: offset });
+    const campusDate = date.toString();
+    const dayMeetings = getMeetingsForCampusDate(meetings, date);
+    const rule = configuration.dateRules.find(
+      (candidate) => candidate.date === campusDate,
+    );
+    const dayList = element("ol", { className: "week-class-list" });
+
+    for (const meeting of dayMeetings) {
+      const destination = meetingDestination(configuration, meeting);
+      dayList.append(
+        element(
+          "li",
+          {},
+          element("time", {
+            text: displayTime(meeting.startTime),
+            attributes: { datetime: meeting.start.toString() },
+          }),
+          element(
+            "div",
+            { className: "week-class-details" },
+            element(
+              "div",
+              { className: "week-class-topline" },
+              element("span", {
+                className: "week-course-code",
+                text: meeting.courseCode,
+              }),
+              meeting.modality === "virtual"
+                ? element("span", {
+                    className: "week-virtual-badge",
+                    text: "Virtual",
+                  })
+                : null,
+            ),
+            element("p", { text: meeting.title }),
+            element("p", {
+              className: "week-location",
+              text:
+                meeting.modality === "virtual"
+                  ? "Online"
+                  : `${destination.displayName} · Room ${meeting.room}`,
+            }),
+          ),
+        ),
+      );
+    }
+
+    const isToday = campusDate === state.campusDate;
+    days.append(
+      element(
+        "section",
+        {
+          className: `week-day${isToday ? " week-day-today" : ""}`,
+          attributes: isToday ? { "aria-current": "date" } : undefined,
+        },
+        element(
+          "div",
+          { className: "week-day-heading" },
+          element("h3", {
+            text: date.toLocaleString("en-US", { weekday: "long" }),
+          }),
+          element("p", { text: displayShortDate(date) }),
+        ),
+        rule?.kind === "no-classes"
+          ? element("p", { className: "week-note", text: rule.label })
+          : rule?.kind === "replacement-weekday"
+            ? element("p", { className: "week-note", text: rule.label })
+            : null,
+        dayMeetings.length
+          ? dayList
+          : element("p", {
+              className: "week-empty",
+              text:
+                rule?.kind === "no-classes"
+                  ? "No classes"
+                  : "No classes scheduled",
+            }),
+      ),
+    );
+  }
+
+  return element(
+    "section",
+    { className: "panel week-panel" },
+    element(
+      "div",
+      { className: "section-heading week-heading" },
+      element(
+        "div",
+        {},
+        element("p", { className: "card-label", text: "Full schedule" }),
+        element("h2", { text: "This week" }),
+      ),
+      element("p", {
+        className: "week-range",
+        text: `${displayShortDate(monday)}–${displayShortDate(friday)}`,
+      }),
+    ),
+    days,
   );
 }
 
@@ -346,7 +475,10 @@ export function renderSchedule(
         ),
       );
     }
-    main.append(remainingSchedule(configuration, state));
+    main.append(
+      remainingSchedule(configuration, state),
+      weeklySchedule(configuration, state),
+    );
   }
 
   root.append(
