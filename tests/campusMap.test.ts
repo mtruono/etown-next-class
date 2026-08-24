@@ -64,5 +64,8 @@ describe("in-app campus orientation map", () => {
     expect(map.querySelector("image")).toBeNull();
     expect(map.querySelector("a")).toBeNull();
     expect(map.textContent).toContain("Example Science Center");
+    for (const label of map.querySelectorAll(".map-building text")) {
+      expect(Number(label.getAttribute("x"))).toBeGreaterThanOrEqual(10);
+    }
   });
 });

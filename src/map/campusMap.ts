@@ -150,7 +150,7 @@ export function projectCoordinate(
 function labelOffset(destination: Destination, index: number): MapPoint {
   const knownOffsets: Record<string, MapPoint> = {
     "founders-b": { x: -8, y: 27 },
-    nicarry: { x: -82, y: -18 },
+    nicarry: { x: 16, y: -18 },
     steinman: { x: 18, y: 28 },
     esbenshade: { x: 16, y: -18 },
   };
