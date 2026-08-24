@@ -1,7 +1,7 @@
 {
-  "name": "Etown Next Class",
-  "short_name": "Next Class",
-  "description": "Your next Elizabethtown class, building, room, and campus bearing at a glance.",
+  "name": "Etown Campus Assistant",
+  "short_name": "Etown Assistant",
+  "description": "A private, one-tap campus assistant for class and home navigation.",
   "display": "standalone",
   "orientation": "portrait",
   "start_url": "./",

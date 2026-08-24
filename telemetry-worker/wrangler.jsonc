@@ -1,0 +1,15 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "etown-campus-assistant-telemetry",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-08-01",
+  "workers_dev": true,
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "etown-campus-assistant-telemetry",
+      "database_id": "REPLACE_AFTER_D1_CREATE",
+      "migrations_dir": "migrations",
+    },
+  ],
+}

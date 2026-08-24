@@ -2,53 +2,54 @@ import { actionButton, element, viewShell } from "./elements";
 
 export function renderAbout(root: HTMLElement, back: () => void): void {
   root.replaceChildren();
-  const uncertainties = [
-    "Founders B uses an approximate B/C building-center point, not a verified B entrance.",
-    "Nicarry uses an approximate building-center point.",
-    "Steinman uses an approximate building-center point.",
-    "Esbenshade is the least certain destination and may use a provisional Masters Center and Esbenshade-area proxy.",
-    "Individual classroom locations are not available.",
-    "Indoor GPS may be inaccurate.",
-    "The app cannot verify construction closures or temporary path changes.",
-    "The in-app line shows straight-line orientation, not a verified walking path.",
-    "Confirm the room number through building signs.",
-    "A wrong precise claim is worse than an honest approximation.",
-  ];
-  const list = element("ol", { className: "detail-list" });
-  uncertainties.forEach((item) => list.append(element("li", { text: item })));
-
   const main = element(
     "main",
     { className: "content-stack" },
     element(
       "section",
       { className: "panel" },
-      element("h2", { text: "Privacy" }),
+      element("h2", { text: "Private on this device" }),
       element("p", {
-        text: "This simple version includes the timetable in the public app, so anyone with the link can view it. It includes no student name, ID, email address, or other identity information.",
+        text: "The private setup link saves the schedule only in this browser, then removes the setup information from the address. There is no account, password, or student login.",
       }),
       element("p", {
-        text: "Live GPS is requested only after a Campus guide action. Captured coordinates are held only in memory while the guide is open. They are not stored, logged, or sent to this app’s server.",
-      }),
-      element("p", {
-        text: "The app draws its own local schematic. It does not send the captured position to Etown, Apple Maps, Google Maps, analytics, or advertising services.",
+        text: "Location is requested only after you tap a navigation button. It is held briefly in memory to choose a map and is never saved by this app or sent to anonymous usage tracking.",
       }),
     ),
     element(
       "section",
-      { className: "panel info-card" },
-      element("h2", { text: "A simple campus bearing" }),
+      { className: "panel" },
+      element("h2", { text: "Real walking maps" }),
       element("p", {
-        text: "The offline campus view points toward approximate building centers. It is a quick orientation aid—not turn-by-turn navigation or an indoor map.",
+        text: "When you appear to be on campus, the assistant normally hands the route to Etown’s official Concept3D map. Off campus, it opens Apple Maps or Google Maps with only the destination so that map can use your current location.",
+      }),
+      element("p", {
+        text: "Map providers have their own privacy practices. The assistant uses same-tab handoff and a no-referrer policy where supported.",
       }),
     ),
     element(
-      "details",
-      { className: "limits-details" },
-      element("summary", { text: "Known map limitations" }),
-      list,
+      "section",
+      { className: "panel warning-panel" },
+      element("h2", { text: "Founders B is not physically verified yet" }),
+      element("p", {
+        text: "The current destination is labeled honestly as the Founders B area. A real phone walk is still required before calling any entrance or arrival point verified.",
+      }),
     ),
-    actionButton("Back", back, { className: "button button-quiet" }),
+    element(
+      "section",
+      { className: "panel" },
+      element("h2", { text: "Anonymous usage" }),
+      element("p", {
+        text: "If enabled, the app can record anonymous opens and navigation launch attempts. It never includes coordinates, schedule details, classes, rooms, a name, a route, or a referrer. You can switch it off in Settings.",
+      }),
+    ),
+    element("p", {
+      className: "help-text unofficial-note",
+      text: "Unofficial personal campus assistant. Always follow posted signs and campus safety guidance.",
+    }),
+    actionButton("Back to settings", back, {
+      className: "button button-quiet",
+    }),
   );
   root.append(viewShell("About and privacy", main));
 }

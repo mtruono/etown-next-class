@@ -1,6 +1,6 @@
 {
   "name": "etown-next-class",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "type": "module",
   "engines": {
@@ -37,7 +37,7 @@
     "globals": "^16.3.0",
     "jsdom": "^26.1.0",
     "prettier": "^3.6.2",
-    "sharp": "^0.34.3",
+    "sharp": "^0.35.3",
     "tsx": "^4.20.4",
     "typescript": "^5.9.2",
     "typescript-eslint": "^8.39.1",

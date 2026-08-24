@@ -54,7 +54,7 @@ export function buildIcs(
   const calendarLines = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
-    "PRODID:-//Etown Next Class//Private Calendar 1.0//EN",
+    "PRODID:-//Etown Campus Assistant//Private Calendar 1.0//EN",
     "CALSCALE:GREGORIAN",
     "METHOD:PUBLISH",
     `X-WR-CALNAME:${escapeIcs(configuration.configurationLabel)}`,

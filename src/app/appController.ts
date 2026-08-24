@@ -1,19 +1,32 @@
 import { Temporal } from "@js-temporal/polyfill";
 
 import type { AppState, DirectionSession } from "./appState";
-import { publicSchedule } from "../data/publicSchedule";
+import { demoSchedule } from "../data/demoSchedule";
 import { getScheduleState } from "../domain/scheduleState";
 import type {
   AppConfiguration,
-  Destination,
   ExpandedMeeting,
+  RouteProviderId,
 } from "../domain/types";
 import { requestCurrentPosition } from "../location/geolocation";
+import { assessCapturedLocation } from "../location/locationDecision";
 import {
-  assessCapturedLocation,
-  eligibleLastBuilding,
-} from "../location/locationDecision";
-import type { CampusMapOrigin } from "../map/campusMap";
+  createClassNavigationTarget,
+  createHomeNavigationTarget,
+  destinationForTarget,
+  type NavigationTarget,
+} from "../navigation/navigationTarget";
+import {
+  externalProvider,
+  selectRouteProvider,
+} from "../navigation/providerSelection";
+import { buildProviderUrl, toRouteDestination } from "../routes/routeService";
+import { createConfigurationStore } from "../storage/configurationStore";
+import {
+  createPreferenceStore,
+  type PreferenceStore,
+} from "../storage/preferenceStore";
+import { TelemetryClient } from "../telemetry/telemetry";
 import { renderAbout } from "../ui/aboutView";
 import { renderDirections } from "../ui/directionsView";
 import { actionButton, element } from "../ui/elements";
@@ -21,9 +34,13 @@ import { renderSchedule } from "../ui/scheduleView";
 import { renderSettings } from "../ui/settingsView";
 
 type NowProvider = () => Temporal.Instant | Temporal.ZonedDateTime;
+type NavigationLauncher = (url: string) => void;
 
 export class AppController {
   private readonly now: NowProvider;
+  private readonly launchNavigation: NavigationLauncher;
+  private readonly preferences: PreferenceStore;
+  private readonly telemetry: TelemetryClient;
   private state: AppState;
   private clockTimer: number | null = null;
   private applyUpdate: (() => Promise<void>) | null = null;
@@ -31,9 +48,18 @@ export class AppController {
   constructor(
     private readonly root: HTMLElement,
     now: NowProvider = () => Temporal.Now.instant(),
-    configuration: AppConfiguration = publicSchedule,
+    configuration: AppConfiguration = demoSchedule,
+    launchNavigation: NavigationLauncher = (url) => window.location.assign(url),
+    telemetry: TelemetryClient = new TelemetryClient({
+      endpoint: "",
+      enabled: false,
+    }),
+    private readonly onForget: () => void = () => window.location.reload(),
   ) {
     this.now = now;
+    this.launchNavigation = launchNavigation;
+    this.preferences = createPreferenceStore(window.localStorage);
+    this.telemetry = telemetry;
     this.state = {
       view: "home",
       configuration,
@@ -44,13 +70,6 @@ export class AppController {
   }
 
   start(): void {
-    if (window.location.hash) {
-      window.history.replaceState(
-        window.history.state,
-        "",
-        `${window.location.pathname}${window.location.search}`,
-      );
-    }
     window.addEventListener("online", () => {
       this.state.online = true;
       this.render();
@@ -59,8 +78,20 @@ export class AppController {
       this.state.online = false;
       this.render();
     });
+    window.addEventListener("pageshow", (event) => {
+      if (event.persisted && this.state.view === "directions") {
+        this.state.view = "home";
+        this.state.directions = null;
+        this.render();
+      }
+    });
     document.addEventListener("visibilitychange", () => {
-      if (document.visibilityState === "visible") this.render();
+      if (
+        document.visibilityState === "visible" &&
+        this.state.view === "home"
+      ) {
+        this.render();
+      }
     });
     this.clockTimer = window.setInterval(() => {
       if (this.state.view === "home") this.render();
@@ -78,101 +109,123 @@ export class AppController {
     this.render();
   }
 
-  private destinationForMeeting(meeting: ExpandedMeeting): Destination {
-    const destination = this.state.configuration.destinations.find(
-      ({ id }) => id === meeting.destinationId,
-    );
-    if (!destination)
-      throw new Error("The meeting destination is unavailable.");
-    return destination;
-  }
-
-  private homeFallback(): Destination {
-    const configuration = this.state.configuration;
-    const home = configuration.destinations.find(
-      ({ id }) => id === configuration.homeFallbackDestinationId,
-    );
-    if (!home) throw new Error("The home fallback destination is unavailable.");
-    return home;
-  }
-
-  private makeDirectionSession(meeting: ExpandedMeeting): DirectionSession {
+  private makeDirectionSession(target: NavigationTarget): DirectionSession {
     return {
-      meeting,
+      target,
       requesting: true,
       failureMessage: null,
       capturedPosition: null,
       assessment: null,
-      acceptedLowAccuracy: false,
-      fixedOrigin: null,
-      destinationOnly: false,
-      originDisclosure: null,
+      chosenProvider: null,
+      launchUrl: null,
     };
   }
 
-  private async beginDirections(meeting: ExpandedMeeting): Promise<void> {
-    if (meeting.modality === "virtual") return;
-    const session = this.makeDirectionSession(meeting);
+  private targetForMeeting(meeting: ExpandedMeeting): NavigationTarget {
+    const destination = this.state.configuration.destinations.find(
+      ({ id }) => id === meeting.destinationId,
+    );
+    if (!destination) throw new Error("The class destination is unavailable.");
+    return createClassNavigationTarget(meeting, destination);
+  }
+
+  private buildUrl(
+    session: DirectionSession,
+    provider: RouteProviderId,
+  ): string {
+    const destination = destinationForTarget(
+      this.state.configuration,
+      session.target,
+    );
+    const origin =
+      provider === "concept3d" &&
+      session.capturedPosition &&
+      session.assessment?.classification === "on-campus"
+        ? {
+            latitude: session.capturedPosition.latitude,
+            longitude: session.capturedPosition.longitude,
+            name: "Current location",
+          }
+        : null;
+    return buildProviderUrl(
+      this.state.configuration,
+      provider,
+      origin,
+      toRouteDestination(
+        destination,
+        session.target.kind === "class" ? session.target.room : undefined,
+      ),
+    );
+  }
+
+  private launchSession(
+    session: DirectionSession,
+    provider: RouteProviderId,
+  ): void {
+    try {
+      const url = this.buildUrl(session, provider);
+      session.requesting = false;
+      session.failureMessage = null;
+      session.chosenProvider = provider;
+      session.launchUrl = url;
+      this.render();
+      void this.telemetry.track("map_launch_attempted", {
+        target: session.target.kind,
+        provider,
+      });
+      this.launchNavigation(url);
+    } catch {
+      session.requesting = false;
+      session.failureMessage =
+        "Choose another map or try the navigation request again.";
+      this.render();
+    }
+  }
+
+  private async beginNavigation(target: NavigationTarget): Promise<void> {
+    void this.telemetry.track(
+      target.kind === "home"
+        ? "take_me_home_tapped"
+        : "take_me_to_class_tapped",
+      { target: target.kind },
+    );
+    const session = this.makeDirectionSession(target);
     this.state.directions = session;
     this.state.view = "directions";
     this.render();
+    if (!this.state.online) {
+      session.requesting = false;
+      this.render();
+      return;
+    }
+
     const result = await requestCurrentPosition();
     if (this.state.directions !== session) return;
-    session.requesting = false;
-    if (!result.ok) {
-      session.failureMessage = result.message;
-    } else {
+    const preferences = this.preferences.getNavigationPreferences();
+    let provider: RouteProviderId;
+    if (result.ok) {
       session.capturedPosition = result.position;
       session.assessment = assessCapturedLocation(
         this.state.configuration,
         result.position,
-        this.destinationForMeeting(meeting),
+        destinationForTarget(this.state.configuration, target),
       );
+      provider = selectRouteProvider(
+        session.assessment.classification,
+        preferences,
+        navigator.userAgent,
+      );
+    } else {
+      const failureEvent =
+        result.code === "permission-denied"
+          ? "location_permission_denied"
+          : result.code === "timeout"
+            ? "location_timeout"
+            : "location_unavailable";
+      void this.telemetry.track(failureEvent, { target: target.kind });
+      provider = externalProvider(preferences.external, navigator.userAgent);
     }
-    this.render();
-  }
-
-  private previewFromHome(meeting: ExpandedMeeting): void {
-    if (meeting.modality === "virtual") return;
-    const home = this.homeFallback();
-    this.state.directions = {
-      ...this.makeDirectionSession(meeting),
-      requesting: false,
-      fixedOrigin: {
-        latitude: home.latitude,
-        longitude: home.longitude,
-        name: "Founders B, approximate",
-      },
-      originDisclosure:
-        "Founders B is an approximate B/C building-center fallback, not your live location or a verified doorway.",
-    };
-    this.state.view = "directions";
-    this.render();
-  }
-
-  private setFallbackOrigin(
-    destination: Destination,
-    disclosure: string,
-  ): void {
-    if (!this.state.directions) return;
-    const isHome =
-      destination.id === this.state.configuration.homeFallbackDestinationId;
-    const origin: CampusMapOrigin = {
-      latitude: destination.latitude,
-      longitude: destination.longitude,
-      name: isHome ? "Founders B, approximate" : destination.displayName,
-    };
-    Object.assign(this.state.directions, {
-      requesting: false,
-      failureMessage: null,
-      capturedPosition: null,
-      assessment: null,
-      acceptedLowAccuracy: false,
-      fixedOrigin: origin,
-      destinationOnly: false,
-      originDisclosure: disclosure,
-    });
-    this.render();
+    this.launchSession(session, provider);
   }
 
   private renderUpdateBanner(): void {
@@ -197,88 +250,91 @@ export class AppController {
     const configuration = this.state.configuration;
     switch (this.state.view) {
       case "home": {
-        const scheduleState = getScheduleState(configuration, this.now());
         renderSchedule(
           this.root,
           configuration,
-          scheduleState,
+          getScheduleState(configuration, this.now()),
           this.state.online,
           {
             openSettings: () => {
               this.state.view = "settings";
               this.render();
             },
-            directions: (meeting) => this.beginDirections(meeting),
-            directionsFromElsewhere: (meeting) => this.beginDirections(meeting),
-            previewFromHome: (meeting) => this.previewFromHome(meeting),
+            takeToClass: (meeting) =>
+              this.beginNavigation(this.targetForMeeting(meeting)),
+            takeHome: () =>
+              this.beginNavigation(createHomeNavigationTarget(configuration)),
           },
         );
         break;
       }
       case "directions": {
-        if (!this.state.directions) {
+        const session = this.state.directions;
+        if (!session) {
           this.state.view = "home";
           this.render();
           return;
         }
-        const scheduleState = getScheduleState(configuration, this.now());
-        const lastBuilding = eligibleLastBuilding(
-          scheduleState.previous,
-          scheduleState.campusNow,
-          configuration.destinations,
-        );
-        renderDirections(
-          this.root,
-          configuration,
-          this.state.directions,
-          this.state.online,
-          lastBuilding,
-          this.homeFallback(),
-          {
-            back: () => {
-              this.state.directions = null;
-              this.state.view = "home";
-              this.render();
-            },
-            retry: async () => {
-              await this.beginDirections(this.state.directions!.meeting);
-            },
-            acceptLowAccuracy: () => {
-              if (this.state.directions) {
-                this.state.directions.acceptedLowAccuracy = true;
-              }
-              this.render();
-            },
-            useFallback: (destination, disclosure) =>
-              this.setFallbackOrigin(destination, disclosure),
-            useDestinationOnly: () => {
-              if (!this.state.directions) return;
-              Object.assign(this.state.directions, {
-                requesting: false,
-                failureMessage: null,
-                capturedPosition: null,
-                assessment: null,
-                fixedOrigin: null,
-                destinationOnly: true,
-                originDisclosure: null,
-              });
-              this.render();
-            },
-          },
-        );
-        break;
-      }
-      case "settings":
-        renderSettings(this.root, configuration, {
+        renderDirections(this.root, configuration, session, this.state.online, {
           back: () => {
+            this.state.directions = null;
             this.state.view = "home";
             this.render();
           },
-          showAbout: () => {
-            this.state.view = "about";
-            this.render();
-          },
+          retry: () => this.beginNavigation(session.target),
+          launchWith: (provider) => this.launchSession(session, provider),
+          takeHome: () =>
+            this.beginNavigation(createHomeNavigationTarget(configuration)),
         });
+        break;
+      }
+      case "settings":
+        renderSettings(
+          this.root,
+          configuration,
+          this.preferences.getNavigationPreferences(),
+          this.preferences.getTelemetryEnabled(),
+          {
+            back: () => {
+              this.state.view = "home";
+              this.render();
+            },
+            showAbout: () => {
+              this.state.view = "about";
+              this.render();
+            },
+            setCampusProvider: (provider) => {
+              this.preferences.setCampusProvider(provider);
+              this.render();
+            },
+            setExternalProvider: (provider) => {
+              this.preferences.setExternalProvider(provider);
+              this.render();
+            },
+            setTelemetryEnabled: (enabled) => {
+              void this.telemetry.setEnabled(enabled);
+              this.preferences.setTelemetryEnabled(enabled);
+              this.render();
+            },
+            forgetAppData: () => {
+              createConfigurationStore(window.localStorage).eraseAllAppData();
+              const sessionKeys: string[] = [];
+              for (
+                let index = 0;
+                index < window.sessionStorage.length;
+                index += 1
+              ) {
+                const key = window.sessionStorage.key(index);
+                if (key?.startsWith("etown-next-class.")) sessionKeys.push(key);
+              }
+              sessionKeys.forEach((key) =>
+                window.sessionStorage.removeItem(key),
+              );
+              this.destroy();
+              this.onForget();
+            },
+          },
+        );
         break;
       case "about":
         renderAbout(this.root, () => {

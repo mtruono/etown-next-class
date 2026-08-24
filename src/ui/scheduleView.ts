@@ -6,11 +6,7 @@ import {
   getMeetingsForCampusWeek,
   getSameBuildingTransition,
 } from "../domain/scheduleEngine";
-import {
-  formatCampusDate,
-  formatCampusTime,
-  formatDateTime,
-} from "../domain/time";
+import { formatCampusDate, formatCampusTime } from "../domain/time";
 import type {
   AppConfiguration,
   Destination,
@@ -21,40 +17,11 @@ import { actionButton, element, viewShell } from "./elements";
 
 export interface ScheduleActions {
   openSettings(): void;
-  directions(meeting: ExpandedMeeting): void;
-  directionsFromElsewhere(meeting: ExpandedMeeting): void;
-  previewFromHome(meeting: ExpandedMeeting): void;
+  takeToClass(meeting: ExpandedMeeting): void;
+  takeHome(): void;
 }
 
-function displayTime(time: string): string {
-  const value = Temporal.PlainTime.from(time);
-  const hour = value.hour % 12 || 12;
-  return `${hour}:${String(value.minute).padStart(2, "0")} ${value.hour >= 12 ? "PM" : "AM"}`;
-}
-
-function displayShortDate(date: Temporal.PlainDate): string {
-  return date.toLocaleString("en-US", { month: "short", day: "numeric" });
-}
-
-function countdown(
-  meeting: ExpandedMeeting,
-  now: ScheduleState["campusNow"],
-): string {
-  const milliseconds = Math.max(
-    0,
-    Number(meeting.start.epochMilliseconds - now.epochMilliseconds),
-  );
-  const minutes = Math.floor(milliseconds / 60_000);
-  if (minutes < 60) return `${minutes} min`;
-  const hours = Math.floor(minutes / 60);
-  const remainder = minutes % 60;
-  if (hours < 24)
-    return `${hours} hr${hours === 1 ? "" : "s"}${remainder ? ` ${remainder} min` : ""}`;
-  const days = Math.floor(hours / 24);
-  return `${days} day${days === 1 ? "" : "s"}`;
-}
-
-function meetingDestination(
+function destinationForMeeting(
   configuration: AppConfiguration,
   meeting: ExpandedMeeting,
 ): Destination {
@@ -65,240 +32,293 @@ function meetingDestination(
   return destination;
 }
 
-function meetingCard(
-  configuration: AppConfiguration,
-  state: ScheduleState,
-  meeting: ExpandedMeeting,
-  heading: string,
-  actions: ScheduleActions,
-  options: { primary?: boolean; directions?: boolean } = {},
-): HTMLElement {
-  const destination = meetingDestination(configuration, meeting);
-  const isVirtual = meeting.modality === "virtual";
-  const stateClass =
-    heading === "Current class" ? " class-card-current" : " class-card-next";
-  return element(
-    "article",
-    {
-      className: `class-card${stateClass}${options.primary ? " class-card-primary" : ""}`,
-    },
-    element(
-      "div",
-      { className: "card-topline" },
-      element("p", { className: "card-label", text: heading }),
-      element("p", { className: "course-code", text: meeting.courseCode }),
-    ),
-    element("h2", { className: "course-title", text: meeting.title }),
-    isVirtual
-      ? element("p", {
-          className: "virtual-banner",
-          text: `${meeting.replacementLabel ?? "Virtual"}. No walking directions are needed.`,
-        })
-      : element(
-          "div",
-          { className: "destination" },
-          element("p", {
-            className: "building",
-            text: destination.displayName,
-          }),
-          element("p", { className: "room", text: `Room ${meeting.room}` }),
-        ),
-    element(
-      "div",
-      { className: "class-meta" },
-      element("p", {
-        className: "class-time",
-        text: `${formatDateTime(meeting.start)}–${formatCampusTime(meeting.end)}`,
-      }),
-      heading === "Next class"
-        ? element("p", {
-            className: "countdown",
-            text: `In ${countdown(meeting, state.campusNow)}`,
-          })
-        : null,
-    ),
-    !isVirtual && options.directions !== false
-      ? actionButton(
-          heading === "Current class"
-            ? "Campus guide to current class"
-            : `Campus guide to ${destination.displayName}, Room ${meeting.room}`,
-          () => actions.directions(meeting),
-          {
-            className:
-              heading === "Current class"
-                ? "button button-secondary"
-                : "button button-primary",
-          },
-        )
-      : null,
-  );
+function displayTime(value: string | Temporal.ZonedDateTime): string {
+  const time =
+    typeof value === "string" ? Temporal.PlainTime.from(value) : value;
+  const hour = time.hour % 12 || 12;
+  return `${hour}:${String(time.minute).padStart(2, "0")} ${time.hour >= 12 ? "PM" : "AM"}`;
 }
 
-function remainingSchedule(
+function countdown(
+  meeting: ExpandedMeeting,
+  now: ScheduleState["campusNow"],
+): string {
+  const minutes = Math.max(
+    0,
+    Math.ceil(
+      Number(meeting.start.epochMilliseconds - now.epochMilliseconds) / 60_000,
+    ),
+  );
+  if (minutes < 60) return `${minutes} minute${minutes === 1 ? "" : "s"}`;
+  if (minutes < 24 * 60) {
+    const hours = Math.floor(minutes / 60);
+    const remainder = minutes % 60;
+    return `${hours} hr${hours === 1 ? "" : "s"}${remainder ? ` ${remainder} min` : ""}`;
+  }
+  const days = Math.floor(minutes / (24 * 60));
+  return `${days} day${days === 1 ? "" : "s"}`;
+}
+
+function meetingLocation(
+  configuration: AppConfiguration,
+  meeting: ExpandedMeeting,
+): string {
+  if (meeting.modality === "virtual") return "Online · Virtual class";
+  const destination = destinationForMeeting(configuration, meeting);
+  return `${destination.displayName} · Room ${meeting.room}`;
+}
+
+function primaryCard(
   configuration: AppConfiguration,
   state: ScheduleState,
+  actions: ScheduleActions,
 ): HTMLElement {
-  const list = element("ol", { className: "schedule-list" });
-  for (const meeting of state.remainingToday) {
-    const destination = meetingDestination(configuration, meeting);
-    list.append(
-      element(
-        "li",
-        {},
-        element("time", {
-          text: displayTime(meeting.startTime),
-          attributes: { datetime: meeting.start.toString() },
-        }),
-        element("span", { text: meeting.courseCode }),
-        element("span", {
-          text:
-            meeting.modality === "virtual"
-              ? "Virtual"
-              : `${destination.displayName}, Room ${meeting.room}`,
-        }),
-      ),
+  const primary = state.current ?? state.next;
+  const isCurrent = Boolean(state.current);
+  const noClassToday =
+    Boolean(state.noClassesReason) || state.today.length === 0;
+  const doneToday = state.afterLastClassToday && !isCurrent;
+
+  if (!primary) {
+    return element(
+      "section",
+      { className: "assistant-card assistant-card-empty" },
+      element("p", { className: "assistant-kicker", text: "ALL SET" }),
+      element("h2", {
+        text:
+          state.phase === "semester-complete"
+            ? "This semester is complete"
+            : "No more classes are scheduled",
+      }),
+      element("p", {
+        text: "Your take-me-home button is still ready whenever you need it.",
+      }),
     );
   }
+
+  const destination = destinationForMeeting(configuration, primary);
+  let status: string;
+  if (isCurrent) status = "IN CLASS NOW";
+  else if (doneToday) status = "YOU’RE DONE FOR TODAY";
+  else if (noClassToday)
+    status = state.noClassesReason?.toUpperCase() ?? "NO CLASSES TODAY";
+  else
+    status = `NEXT CLASS IN ${countdown(primary, state.campusNow).toUpperCase()}`;
+
   return element(
     "section",
-    { className: "panel day-panel" },
-    element(
-      "div",
-      { className: "section-heading" },
-      element("h2", { text: "Today’s remaining schedule" }),
-      state.remainingToday.length
-        ? element("span", {
-            className: "meeting-count",
-            text: String(state.remainingToday.length),
-            attributes: {
-              "aria-label": `${state.remainingToday.length} meetings remaining`,
-            },
-          })
-        : null,
-    ),
-    state.remainingToday.length
-      ? list
-      : element("p", { text: "Nothing else is scheduled today." }),
+    { className: "assistant-card" },
+    element("p", { className: "assistant-kicker", text: status }),
+    doneToday || (noClassToday && !isCurrent)
+      ? element("p", {
+          className: "next-date",
+          text: `Next: ${primary.start.toLocaleString("en-US", {
+            weekday: "long",
+            month: "short",
+            day: "numeric",
+          })}`,
+        })
+      : null,
+    element("p", {
+      className: "assistant-course-code",
+      text: primary.courseCode,
+    }),
+    element("h2", { className: "assistant-course", text: primary.title }),
+    primary.modality === "virtual"
+      ? element("p", { className: "assistant-building", text: "Virtual class" })
+      : element(
+          "div",
+          { className: "assistant-destination" },
+          element("p", {
+            className: "assistant-building",
+            text: destination.displayName,
+          }),
+          element("p", {
+            className: "assistant-room",
+            text: `Room ${primary.room}`,
+          }),
+        ),
+    element("p", {
+      className: "assistant-time",
+      text: `${displayTime(primary.start)}–${displayTime(primary.end)}`,
+    }),
+    isCurrent
+      ? element("p", {
+          className: "class-end",
+          text: `Ends at ${displayTime(primary.end)}`,
+        })
+      : null,
+    primary.modality === "in-person"
+      ? actionButton("TAKE ME TO CLASS", () => actions.takeToClass(primary), {
+          className: "button assistant-class-button",
+          ariaLabel: `Take me to ${destination.displayName}, Room ${primary.room}`,
+        })
+      : element("p", {
+          className: "virtual-banner",
+          text: `${primary.replacementLabel ?? "Virtual class"}. No walking directions are needed.`,
+        }),
   );
 }
 
-function weeklySchedule(
+function sameBuildingMessage(
   configuration: AppConfiguration,
   state: ScheduleState,
-): HTMLElement {
+  actions: ScheduleActions,
+): HTMLElement | null {
+  const transition = getSameBuildingTransition(state.previous, state.next);
+  if (!transition.isSameBuilding || !state.next || state.current) return null;
+  const destination = destinationForMeeting(configuration, state.next);
+  return element(
+    "aside",
+    { className: "same-building-assist" },
+    element("p", {
+      text: `Stay in ${destination.displayName} and go to Room ${state.next.room}.`,
+    }),
+    actionButton("I’m somewhere else", () => actions.takeToClass(state.next!), {
+      className: "button button-text",
+    }),
+  );
+}
+
+function nextAfterCurrent(
+  configuration: AppConfiguration,
+  state: ScheduleState,
+): HTMLElement | null {
+  if (!state.current || !state.next) return null;
+  return element(
+    "aside",
+    { className: "next-glance" },
+    element("span", { text: "Next" }),
+    element("strong", {
+      text: `${displayTime(state.next.start)} · ${meetingLocation(configuration, state.next)}`,
+    }),
+  );
+}
+
+function scheduleRow(
+  configuration: AppConfiguration,
+  meeting: ExpandedMeeting,
+): HTMLLIElement {
+  return element(
+    "li",
+    {},
+    element("time", {
+      text: displayTime(meeting.start),
+      attributes: { datetime: meeting.start.toString() },
+    }),
+    element(
+      "div",
+      {},
+      element("strong", { text: meeting.courseCode }),
+      element("span", { text: meeting.title }),
+      element("span", {
+        className: "schedule-location",
+        text: meetingLocation(configuration, meeting),
+      }),
+    ),
+  );
+}
+
+function todayDisclosure(
+  configuration: AppConfiguration,
+  state: ScheduleState,
+): HTMLDetailsElement {
+  const list = element("ol", { className: "assistant-schedule-list" });
+  state.today.forEach((meeting) =>
+    list.append(scheduleRow(configuration, meeting)),
+  );
+  return element(
+    "details",
+    { className: "schedule-disclosure" },
+    element(
+      "summary",
+      {},
+      element("span", { text: "Today’s schedule" }),
+      element("span", {
+        text: `${state.today.length} ${state.today.length === 1 ? "class" : "classes"}`,
+      }),
+    ),
+    state.noClassesReason
+      ? element("p", {
+          className: "schedule-note",
+          text: state.noClassesReason,
+        })
+      : state.today.length
+        ? list
+        : element("p", {
+            className: "schedule-note",
+            text: "No classes today.",
+          }),
+  );
+}
+
+function weekDisclosure(
+  configuration: AppConfiguration,
+  state: ScheduleState,
+): HTMLDetailsElement {
   const anchor =
     state.phase === "before-term" && state.next
       ? state.next.start.toPlainDate()
       : state.campusNow.toPlainDate();
   const monday = anchor.subtract({ days: anchor.dayOfWeek - 1 });
-  const friday = monday.add({ days: 4 });
   const meetings = getMeetingsForCampusWeek(
     expandSchedule(configuration),
     anchor,
   );
-  const days = element("div", { className: "week-days" });
+  const week = element("div", { className: "assistant-week" });
 
   for (let offset = 0; offset < 5; offset += 1) {
     const date = monday.add({ days: offset });
-    const campusDate = date.toString();
     const dayMeetings = getMeetingsForCampusDate(meetings, date);
-    const rule = configuration.dateRules.find(
-      (candidate) => candidate.date === campusDate,
+    const list = element("ol", { className: "assistant-schedule-list" });
+    dayMeetings.forEach((meeting) =>
+      list.append(scheduleRow(configuration, meeting)),
     );
-    const dayList = element("ol", { className: "week-class-list" });
-
-    for (const meeting of dayMeetings) {
-      const destination = meetingDestination(configuration, meeting);
-      dayList.append(
-        element(
-          "li",
-          {},
-          element("time", {
-            text: displayTime(meeting.startTime),
-            attributes: { datetime: meeting.start.toString() },
-          }),
-          element(
-            "div",
-            { className: "week-class-details" },
-            element(
-              "div",
-              { className: "week-class-topline" },
-              element("span", {
-                className: "week-course-code",
-                text: meeting.courseCode,
-              }),
-              meeting.modality === "virtual"
-                ? element("span", {
-                    className: "week-virtual-badge",
-                    text: "Virtual",
-                  })
-                : null,
-            ),
-            element("p", { text: meeting.title }),
-            element("p", {
-              className: "week-location",
-              text:
-                meeting.modality === "virtual"
-                  ? "Online"
-                  : `${destination.displayName} · Room ${meeting.room}`,
-            }),
-          ),
-        ),
-      );
-    }
-
-    const isToday = campusDate === state.campusDate;
-    days.append(
+    const rule = configuration.dateRules.find(
+      ({ date: ruleDate }) => ruleDate === date.toString(),
+    );
+    week.append(
       element(
         "section",
         {
-          className: `week-day${isToday ? " week-day-today" : ""}`,
-          attributes: isToday ? { "aria-current": "date" } : undefined,
+          className: `assistant-week-day${date.toString() === state.campusDate ? " is-today" : ""}`,
+          attributes:
+            date.toString() === state.campusDate
+              ? { "aria-current": "date" }
+              : undefined,
         },
         element(
-          "div",
-          { className: "week-day-heading" },
-          element("h3", {
+          "h3",
+          {},
+          element("span", {
             text: date.toLocaleString("en-US", { weekday: "long" }),
           }),
-          element("p", { text: displayShortDate(date) }),
+          element("span", {
+            text: date.toLocaleString("en-US", {
+              month: "short",
+              day: "numeric",
+            }),
+          }),
         ),
         rule?.kind === "no-classes"
-          ? element("p", { className: "week-note", text: rule.label })
-          : rule?.kind === "replacement-weekday"
-            ? element("p", { className: "week-note", text: rule.label })
-            : null,
-        dayMeetings.length
-          ? dayList
-          : element("p", {
-              className: "week-empty",
-              text:
-                rule?.kind === "no-classes"
-                  ? "No classes"
-                  : "No classes scheduled",
-            }),
+          ? element("p", { className: "schedule-note", text: rule.label })
+          : dayMeetings.length
+            ? list
+            : element("p", { className: "schedule-note", text: "No classes" }),
       ),
     );
   }
 
   return element(
-    "section",
-    { className: "panel week-panel" },
+    "details",
+    { className: "schedule-disclosure" },
     element(
-      "div",
-      { className: "section-heading week-heading" },
-      element(
-        "div",
-        {},
-        element("p", { className: "card-label", text: "Full schedule" }),
-        element("h2", { text: "This week" }),
-      ),
-      element("p", {
-        className: "week-range",
-        text: `${displayShortDate(monday)}–${displayShortDate(friday)}`,
-      }),
+      "summary",
+      {},
+      element("span", { text: "This week" }),
+      element("span", { text: "Monday–Friday" }),
     ),
-    days,
+    week,
   );
 }
 
@@ -310,183 +330,68 @@ export function renderSchedule(
   actions: ScheduleActions,
 ): void {
   root.replaceChildren();
-  const sameBuilding = getSameBuildingTransition(state.previous, state.next);
-  const main = element("main", { className: "content-stack" });
-  const liveSummary = state.current
-    ? `Current class ${state.current.courseCode}.`
-    : state.next
-      ? `Next class ${state.next.courseCode}.`
-      : state.phase === "finals-and-reading"
-        ? "Regular classes have ended."
-        : state.phase === "semester-complete"
-          ? "This semester is complete."
-          : "No more classes are scheduled.";
+  const main = element("main", { className: "assistant-main" });
   main.append(
-    element("p", {
-      className: "visually-hidden",
-      text: liveSummary,
-      attributes: { role: "status", "aria-live": "polite" },
-    }),
     element(
       "section",
       {
-        className: "campus-clock",
-        attributes: { "aria-label": "Elizabethtown campus time" },
+        className: "assistant-clock",
+        attributes: { "aria-label": "Campus time" },
       },
-      element("p", { text: formatCampusDate(state.campusNow) }),
+      element("span", { text: formatCampusDate(state.campusNow) }),
       element("time", {
-        className: "campus-time",
         text: formatCampusTime(state.campusNow),
         attributes: { datetime: state.campusNow.toString() },
       }),
-      Intl.DateTimeFormat().resolvedOptions().timeZone !==
-        configuration.campus.timezone
-        ? element("p", {
-            className: "timezone-note",
-            text: "Class times are shown in Elizabethtown campus time.",
-          })
-        : null,
     ),
   );
-
   if (!online) {
     main.append(
       element("p", {
         className: "offline-banner",
-        text: "You are offline. The schedule and in-app campus schematic still work. GPS availability and accuracy depend on the phone.",
+        text: "You’re offline. Your saved schedule is still available; live navigation needs a connection.",
         attributes: { role: "status" },
       }),
     );
   }
-
-  if (state.phase === "finals-and-reading") {
+  if (state.informationalNote) {
     main.append(
-      element(
-        "section",
-        { className: "panel state-panel" },
-        element("h2", { text: "Regular classes have ended" }),
-        element("p", {
-          text: "Regular classes have ended. Check the official final exam schedule for exam times and locations.",
-        }),
-      ),
-    );
-  } else if (state.phase === "semester-complete") {
-    main.append(
-      element(
-        "section",
-        { className: "panel state-panel" },
-        element("h2", { text: "This semester is complete." }),
-      ),
-    );
-  } else {
-    if (state.noClassesReason) {
-      main.append(
-        element(
-          "section",
-          { className: "panel state-panel" },
-          element("h2", {
-            text: `No classes today: ${state.noClassesReason}.`,
-          }),
-        ),
-      );
-    } else if (state.afterLastClassToday) {
-      main.append(
-        element(
-          "section",
-          { className: "panel state-panel" },
-          element("h2", { text: "No more classes today." }),
-        ),
-      );
-    }
-
-    if (state.informationalNote) {
-      main.append(
-        element("p", { className: "notice", text: state.informationalNote }),
-      );
-    }
-
-    if (state.current) {
-      const currentDestination = meetingDestination(
-        configuration,
-        state.current,
-      );
-      main.append(
-        element("p", {
-          className: "current-summary",
-          text: `In class now · ${currentDestination.displayName}, Room ${state.current.room} · Ends ${formatCampusTime(state.current.end)}`,
-        }),
-        meetingCard(
-          configuration,
-          state,
-          state.current,
-          "Current class",
-          actions,
-          { directions: true },
-        ),
-      );
-    }
-
-    if (state.next) {
-      const nextDestination = meetingDestination(configuration, state.next);
-      if (sameBuilding.isSameBuilding && !state.current) {
-        main.append(
-          element(
-            "section",
-            { className: "panel same-building" },
-            element("h2", {
-              text: "Stay in the same building, if you’re still there",
-            }),
-            element("p", {
-              text: `Your last scheduled class and your next class are both in ${nextDestination.displayName}. If you are still there, stay in the building and go to Room ${state.next.room}.`,
-            }),
-            actionButton(
-              "I’m somewhere else, use my location",
-              () => actions.directionsFromElsewhere(state.next!),
-              {
-                className: "button button-secondary",
-              },
-            ),
-          ),
-        );
-      }
-      main.append(
-        meetingCard(configuration, state, state.next, "Next class", actions, {
-          primary: !state.current,
-          directions: !sameBuilding.isSameBuilding || state.current !== null,
-        }),
-      );
-    } else if (state.phase === "regular-classes" && state.afterLastClassToday) {
-      main.append(
-        element("p", {
-          className: "notice",
-          text: "There are no later regular-class meetings in this configured term.",
-        }),
-      );
-    }
-
-    if (state.afterLastClassToday && state.next) {
-      main.append(
-        actionButton(
-          "Preview tomorrow from Founders B",
-          () => actions.previewFromHome(state.next!),
-          {
-            className: "button button-secondary",
-          },
-        ),
-      );
-    }
-    main.append(
-      remainingSchedule(configuration, state),
-      weeklySchedule(configuration, state),
+      element("p", { className: "notice", text: state.informationalNote }),
     );
   }
-
-  root.append(
-    viewShell("Etown Next Class", main, {
-      headerAction: actionButton("Info", actions.openSettings, {
-        className: "button button-header",
-        ariaLabel: "Open app details",
-      }),
-    }),
+  main.append(primaryCard(configuration, state, actions));
+  const followingClass = nextAfterCurrent(configuration, state);
+  if (followingClass) main.append(followingClass);
+  const sameBuilding = sameBuildingMessage(configuration, state, actions);
+  if (sameBuilding) main.append(sameBuilding);
+  main.append(
+    element(
+      "nav",
+      {
+        className: "schedule-links",
+        attributes: { "aria-label": "Schedule views" },
+      },
+      todayDisclosure(configuration, state),
+      weekDisclosure(configuration, state),
+    ),
   );
+
+  const fragment = viewShell("Etown Campus Assistant", main, {
+    headerAction: actionButton("Settings", actions.openSettings, {
+      className: "button button-header",
+      ariaLabel: "Open settings",
+    }),
+  });
+  fragment.append(
+    element(
+      "div",
+      { className: "home-dock" },
+      actionButton("TAKE ME HOME", actions.takeHome, {
+        className: "button home-button",
+        ariaLabel: "Take me home to Founders B",
+      }),
+      element("span", { text: "Founders B" }),
+    ),
+  );
+  root.append(fragment);
 }

@@ -1,20 +1,18 @@
-import type { AppConfiguration, ExpandedMeeting } from "../domain/types";
+import type { AppConfiguration, RouteProviderId } from "../domain/types";
 import type { CapturedPosition } from "../location/geolocation";
 import type { LocationAssessment } from "../location/locationDecision";
-import type { CampusMapOrigin } from "../map/campusMap";
+import type { NavigationTarget } from "../navigation/navigationTarget";
 
 export type ViewName = "home" | "directions" | "settings" | "about";
 
 export interface DirectionSession {
-  meeting: ExpandedMeeting;
+  target: NavigationTarget;
   requesting: boolean;
   failureMessage: string | null;
   capturedPosition: CapturedPosition | null;
   assessment: LocationAssessment | null;
-  acceptedLowAccuracy: boolean;
-  fixedOrigin: CampusMapOrigin | null;
-  destinationOnly: boolean;
-  originDisclosure: string | null;
+  chosenProvider: RouteProviderId | null;
+  launchUrl: string | null;
 }
 
 export interface AppState {

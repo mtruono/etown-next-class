@@ -1,83 +1,48 @@
-# Etown Next Class
+# Etown Campus Assistant
 
-Etown Next Class is an unofficial Fall 2026 class companion. Open one ordinary web link and it immediately shows the current class, next class, countdown, building, room, and the rest of today’s schedule. There is no login or setup code.
+A mobile-first personal campus assistant for three immediate questions: where is the next class, when does it start, and can the phone take the student there or home?
 
-The Campus guide is original to this app. After the user taps it, the browser asks once for location and draws a local orientation schematic from that point toward the approximate destination building. It does not open or embed Etown’s map, Apple Maps, Google Maps, or a remote tile service.
+The app stays on GitHub Pages and requires no account, login, password, typed setup code, native wrapper, paid map API, or subscription. A personalized `#setup=...` link imports the private schedule into that browser once, removes the fragment from the visible address, and then uses the ordinary site URL.
 
-## Important privacy choice
+## Student experience
 
-This is the simple public-link version selected by the owner. The timetable and approximate building points are shipped in the public JavaScript application, so anyone with the URL can view them. The app contains no student name, student ID, email address, dorm room, or other identity information.
+- The first screen shows the current or next class, timing, building, room, **Take me to class**, and the permanent **Take me home · Founders B** action.
+- Today and This week are collapsed until requested.
+- A navigation tap requests one-shot location. Confidently on campus uses Etown’s Concept3D walking map by default; off campus or low accuracy uses Apple Maps on iPhone and Google Maps elsewhere unless Settings overrides it.
+- External maps receive the destination but no explicit origin. Concept3D receives the captured origin only for an on-campus preloaded route.
+- The former straight-line schematic is not part of the normal flow.
+- The schedule remains locally available offline; live navigation requires connectivity.
 
-Live GPS coordinates follow a different rule. They are requested only after a Campus guide tap, kept only in memory while that view is open, and never saved, logged, analyzed, or transmitted to this app’s server or a map provider.
+## Private setup
 
-## Architecture
+Real schedule inputs and generated links live under ignored `private/`. Generate and verify them with:
 
-- Vite and TypeScript with plain semantic HTML and CSS
-- `@js-temporal/polyfill` for deterministic `America/New_York` schedule logic
-- Zod validation for the built-in versioned configuration and optional tooling
-- An original SVG campus orientation view generated entirely in the browser
-- `vite-plugin-pwa` for the manifest, application-shell cache, offline schedule, and update prompt
-- Vitest for unit and integration tests
-- Playwright and axe-core for browser and accessibility checks
-- GitHub Pages for free static hosting
-
-The schedule engine, map math, location handling, storage utilities, legacy import utilities, UI, and route URL utilities remain separated. The production interface uses the built-in schedule in `src/data/publicSchedule.ts` and the local schematic in `src/map/campusMap.ts`.
-
-## What the map does and does not do
-
-The in-app map plots approximate building-center points and, when location is available, shows straight-line distance and compass direction. This is orientation information, not a walking-route distance or turn-by-turn route. The line may cross buildings or other obstacles.
-
-The app does not claim to know a verified entrance, indoor classroom position, floor, stairs, hallway, accessible path, construction closure, or temporary detour. Esbenshade is a low-confidence proxy and is the first point to check on campus.
-
-## Local development
-
-Node.js 22 and npm are required.
-
-```bash
-npm ci
-npm run dev
-```
-
-Quality gates:
-
-```bash
-npm run check
-npm run test:e2e
-```
-
-The Playwright command requires installed Chromium and WebKit browser binaries:
-
-```bash
-npx playwright install chromium webkit
-```
-
-The ignored private source and generator are retained for the optional ICS calendar and audit workflow:
-
-```bash
-npm run private:generate
+```sh
+APP_URL=https://mtruono.github.io/etown-next-class/ npm run private:generate
 npm run private:verify
 ```
 
-Generated setup codes, calendars, audits, and route test pages remain ignored and must never be committed. The public app does not require those files.
+Send `private/generated/student-setup-url.txt` privately. Never commit or paste that URL into an issue or pull request. The production entry point contains no real timetable; `src/data/demoSchedule.ts` is deliberately fictional.
 
-## Build and deployment
+Older public commits predate this change and may still contain the previous timetable. This project does not rewrite Git history automatically.
 
-```bash
-npm run build
+## Development and verification
+
+```sh
+npm ci
+npm run check
+npx playwright install chromium webkit
+npm run test:e2e
+npm run private:verify
+cd telemetry-worker
+npm ci
+npm run check
 ```
 
-Vite derives the GitHub project base path from `GITHUB_REPOSITORY` in Actions and uses `/` locally. The Pages workflow checks formatting, lint, types, unit tests, privacy, and the production build before deploying `dist`.
+Use `http://127.0.0.1:5173/?demo=1` for a fictional local demonstration.
 
-The app is hosted at:
+## Anonymous telemetry
 
-<https://mtruono.github.io/etown-next-class/>
+The optional `telemetry-worker/` Cloudflare Worker accepts only a strict event allowlist, hashes the random installation UUID with a server-side salt, stores no IP address or request headers in D1, and protects the owner dashboard with server-side secrets. If `VITE_TELEMETRY_ENDPOINT` is absent, telemetry is a no-op. The student can turn sharing off in Settings.
 
-It works directly in Safari or Chrome. Adding it to the iPhone Home Screen is optional.
-
-## Cost
-
-The app has no backend, database, paid API, map SDK, analytics, custom domain, Apple Developer account, or subscription. Its operating cost is $0 under GitHub Free and GitHub Pages usage limits. See `COSTS.md`.
-
-## Unofficial status
-
-Unofficial personal navigation aid. Not affiliated with or endorsed by Elizabethtown College. Building pins are approximate. Confirm campus signs and official notices.
+See [PRIVACY.md](PRIVACY.md), [COSTS.md](COSTS.md), and [REAL-IPHONE-TEST.md](REAL-IPHONE-TEST.md) before release.

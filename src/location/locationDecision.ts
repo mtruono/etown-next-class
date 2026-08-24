@@ -10,7 +10,11 @@ import type { CapturedPosition } from "./geolocation";
 export const LOW_ACCURACY_THRESHOLD_METERS = 120;
 export const NEAR_DESTINATION_THRESHOLD_METERS = 75;
 
+export type LocationClassification =
+  "on-campus" | "off-campus" | "low-accuracy";
+
 export interface LocationAssessment {
+  classification: LocationClassification;
   lowAccuracy: boolean;
   offCampus: boolean;
   nearDestination: boolean;
@@ -31,9 +35,17 @@ export function assessCapturedLocation(
     position,
     destination,
   );
+  const lowAccuracy = position.accuracyMeters > LOW_ACCURACY_THRESHOLD_METERS;
+  const offCampus =
+    campusDistanceMeters > configuration.campus.onCampusRadiusMeters;
   return {
-    lowAccuracy: position.accuracyMeters > LOW_ACCURACY_THRESHOLD_METERS,
-    offCampus: campusDistanceMeters > configuration.campus.onCampusRadiusMeters,
+    classification: lowAccuracy
+      ? "low-accuracy"
+      : offCampus
+        ? "off-campus"
+        : "on-campus",
+    lowAccuracy,
+    offCampus,
     nearDestination:
       destinationDistanceMeters <= NEAR_DESTINATION_THRESHOLD_METERS,
     campusDistanceMeters,

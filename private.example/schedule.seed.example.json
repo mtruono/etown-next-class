@@ -9,7 +9,7 @@
     "concept3dMapId": "999",
     "officialMapUrl": "https://map.concept3d.com/?id=999",
     "campusCenter": { "latitude": 39.95, "longitude": -75.16 },
-    "onCampusRadiusMeters": 2000
+    "onCampusRadiusMeters": 550
   },
   "term": {
     "id": "fictional-term",

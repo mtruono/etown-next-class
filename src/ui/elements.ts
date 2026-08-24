@@ -83,7 +83,7 @@ export function viewShell(
     element(
       "div",
       { className: "brand-lockup" },
-      element("p", { className: "eyebrow", text: "ETOWN · FALL 2026" }),
+      element("p", { className: "eyebrow", text: "ETOWN · CAMPUS COMPANION" }),
       element("h1", { text: title }),
       options.subtitle
         ? element("p", { className: "header-subtitle", text: options.subtitle })

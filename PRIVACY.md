@@ -1,34 +1,25 @@
 # Privacy
 
-## The timetable is public
+## Schedule setup and storage
 
-This deployment uses the owner-selected simple public-link model. The Fall 2026 timetable, course details, rooms, term exceptions, and approximate building coordinates are included in the public app. Anyone with the link can view them. There is no login, access code, or claim that this data is private.
+The owner creates one personalized URL containing a `#setup=...` fragment. On first open, the app immediately removes the fragment from the visible address, decodes and validates the configuration, and stores the schedule in browser local storage on that device. No login or student account is created. The real timetable is not imported by the production entry point or active production bundle.
 
-The app does not include or request a student name, student ID, email address, phone number, dorm room, account, or other identity information.
+The private link must still be treated like private information. Browser history and messaging services may retain links outside this app. Do not post it publicly. Older public Git commits may contain the earlier timetable because history is not rewritten automatically.
 
-## Live location is not public
+## Location
 
-The app never asks for location on page load. It calls `navigator.geolocation.getCurrentPosition` only after a user taps Campus guide.
+Location is requested only after **Take me to class** or **Take me home** is tapped. One captured point and its accuracy are kept in memory only long enough to classify on-campus versus off-campus and, when appropriate, construct a Concept3D route. The app never places coordinates or accuracy in local storage, IndexedDB, telemetry, logs, error reports, or background location watches.
 
-The returned coordinates and accuracy value are held in memory only while the guide is open. They are not:
+For Apple Maps and Google Maps, the app omits the origin so the selected map can use “here.” For a confidently on-campus Concept3D route, the captured starting point is handed to Etown’s official campus-map provider. Map providers have their own privacy practices. A no-referrer policy is used where supported.
 
-- saved to local storage or IndexedDB;
-- written to logs;
-- sent to this application’s static host;
-- sent to Elizabethtown College, Concept3D, Apple Maps, or Google Maps;
-- sent to analytics, advertising, or error-reporting services; or
-- watched continuously in the background.
+## Anonymous usage sharing
 
-Closing or leaving the guide discards the captured position. The browser and operating system still control location permission and may have their own platform-level privacy behavior.
+When configured and enabled, the app records only these anonymous events: app open, class/home navigation tap, map launch attempt, location permission denial/timeout/unavailability, setup import, and telemetry disabled. Allowed dimensions are target type, provider, app version, and a server-hashed random installation ID.
 
-## Local map
+It does **not** send or store GPS location, accuracy, destination ID, building, course, course code, room, timetable, student name, email, dorm room, full URL, URL fragment, referrer, free-form errors, browser fingerprint, or user-agent string. The Worker does not write IP addresses or request headers to D1. Data older than 90 days is deleted during accepted writes.
 
-The Campus guide is an SVG schematic created from local application data. It loads no map tiles, remote scripts, remote styles, or third-party map iframe. It provides approximate straight-line orientation rather than a verified path.
+Sharing defaults on for this private personal tool and can be disabled in Settings. When disabled, no subsequent events are sent. If no endpoint is configured, telemetry is a safe no-op. There is no advertising analytics, session replay, heatmap, or cookie banner.
 
-## Offline and storage
+## Delete local data
 
-The service worker caches the public application shell and local static assets. That cache necessarily includes the public timetable. It does not cache GPS data or a setup fragment. The app does not need schedule data in browser storage.
-
-## Private generator artifacts
-
-Optional `.ics`, setup-code, audit, and route-verification outputs under `private/` remain ignored. They are development artifacts and are not included in the public build. Run `npm run privacy:check` before every push and after every build.
+Settings → **Reset this app** → **Forget this schedule and app data** removes the saved configuration, provider choices, anonymous installation UUID, telemetry preference, and other application-prefixed browser storage. The app returns to the private-link recovery screen.

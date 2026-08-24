@@ -1,56 +1,27 @@
-# Campus schematic verification record
+# Route verification
 
-Last engineering review: **August 23, 2026**
+## Current status
 
-## Production mapping decision
+Founders B is **unverified**. Official Etown residence information describes Founders as four towers with a shared main lounge connecting the B/C areas, but that does not identify or verify a walking-route endpoint. Until the real-phone walk succeeds, the app uses the honest label **Founders Residence Hall · Founders B area** and does not claim a doorway or invent left/right instructions.
 
-The production app no longer launches or embeds Concept3D, Apple Maps, Google Maps, or any other third-party map. It renders its own SVG campus orientation schematic from local approximate coordinates. The only line drawn from the captured position to a destination is a straight-line guide. It is never described as a walking route.
+The app uses the existing documented Concept3D preloaded walking-route format. It does not combine that route fragment with the separate forced-location (`#!fls/`) fragment because that combination has not been proven. After handoff, Concept3D provides its route, steps, Begin Route behavior, and location controls.
 
-Legacy external URL builders and their unit tests remain isolated development utilities, but the production controller and views do not import or expose them.
+References:
 
-## Coordinate inventory
+- Etown Founders Residence Hall: <https://www.etown.edu/offices/community-living/halls-apts/founders.aspx>
+- Concept3D wayfinding: <https://help.concept3d.com/hc/en-us/articles/360019108534-Wayfinding>
+- Concept3D route URLs: <https://help.concept3d.com/hc/en-us/articles/42406953521939-How-to-Build-a-Wayfinding-URL-for-Your-Concept3D-Map>
+- Concept3D mobile location: <https://help.concept3d.com/hc/en-us/articles/41036084853523-Mobile-Location-Services-Prompting-and-Auto-Enabling-the-Blue-Dot>
 
-No coordinate below has been independently verified as a doorway.
+## Manual verification
 
-| Destination     | Latitude | Longitude | Confidence | Status                                               |
-| --------------- | -------: | --------: | ---------- | ---------------------------------------------------- |
-| Founders B      | 40.14861 | -76.58961 | Low        | Approximate B/C building center, not a B entrance    |
-| Nicarry Hall    | 40.15085 | -76.59345 | Medium     | Approximate building center                          |
-| Steinman Center | 40.15045 | -76.59336 | Medium     | Approximate building center                          |
-| Esbenshade Hall | 40.15129 | -76.59195 | Low        | Provisional Masters Center and Esbenshade-area proxy |
+For Nicarry, Esbenshade, Steinman, and one clearly off-campus point:
 
-## Engineering checks
+1. Open the assistant on the student’s phone.
+2. Tap **Take me home** and allow one-shot location.
+3. Confirm an actual walking route appears, Begin Route or equivalent is available, and the blue dot is understandable.
+4. Walk the full route and record where it ends relative to Founders B.
+5. Compare the arrival wording with physical signs. Do not infer directions that signs do not support.
+6. Use browser Back and confirm the assistant returns.
 
-- The schematic is built from local SVG elements and contains no remote image, iframe, script, style, or map tile.
-- Projection, Haversine distance, bearing, and compass-label calculations have deterministic unit tests.
-- The captured GPS coordinate is plotted only after a user action and is never persisted.
-- An off-campus point is omitted from the close-up schematic rather than compressing the campus into an unusable view.
-- Low-accuracy GPS requires an explicit decision before use.
-- The destination room stays visible above the map.
-- Copy explicitly says the line may cross buildings or other obstacles.
-
-## Real-device status
-
-| Item                                     | Status                       |
-| ---------------------------------------- | ---------------------------- |
-| Local SVG renders in automated DOM tests | Verified                     |
-| Real iPhone location permission          | Not yet tested               |
-| Real iPhone GPS marker placement         | Not yet tested               |
-| Nicarry approximate point on campus      | Needs visual campus check    |
-| Steinman approximate point on campus     | Needs visual campus check    |
-| Esbenshade approximate point on campus   | High-priority campus check   |
-| Founders B fallback point                | Needs visual campus check    |
-| Any entrance or classroom position       | Not verified and not claimed |
-| Any walking path or obstacle avoidance   | Not provided and not claimed |
-| Temporary construction or path closures  | Not available                |
-
-## Historical reference pages
-
-These references helped establish public campus naming and the earlier mapping approach. They are documentation only and are not runtime dependencies:
-
-- <https://www.etown.edu/map/>
-- <https://www.etown.edu/offices/registration-records/bldg_rm_key.aspx>
-- <https://www.etown.edu/offices/residencelife/founders.aspx>
-- <https://map.concept3d.com/?id=1180>
-
-Update a coordinate only from a cited, credible source or a documented on-site check. Record what changed, the date, and exactly what was and was not verified. A wrong precise claim is worse than an honest approximation.
+Only after all three campus walks reach the same useful, signed B/B-C arrival should `coordinateStatus` and the user-facing label be changed to a verified status.
