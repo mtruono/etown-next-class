@@ -27,6 +27,7 @@ export default defineConfig({
     url: "http://127.0.0.1:4173",
     env: {
       ...process.env,
+      GITHUB_REPOSITORY: "",
       VITE_TELEMETRY_ENDPOINT: "http://127.0.0.1:4173/__telemetry",
     },
     reuseExistingServer: !process.env.CI,
