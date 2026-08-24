@@ -8,5 +8,5 @@
     "lib": ["ES2022", "ESNext.Disposable", "DOM"],
     "types": ["node", "vitest/globals"]
   },
-  "include": ["src", "tests"]
+  "include": ["src", "tests", "vitest.config.ts"]
 }
