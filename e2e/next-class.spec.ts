@@ -7,8 +7,10 @@ test("next class is prominent before the term", async ({ page }) => {
   const nextCard = page.locator(".class-card-primary");
   await expect(nextCard.getByText("Next class")).toBeVisible();
   await expect(nextCard.getByText("MA251B")).toBeVisible();
-  await expect(nextCard.getByText("Nicarry Hall")).toBeVisible();
-  await expect(nextCard.getByText("Room 202")).toBeVisible();
+  await expect(
+    nextCard.getByText("Nicarry Hall", { exact: true }),
+  ).toBeVisible();
+  await expect(nextCard.getByText("Room 202", { exact: true })).toBeVisible();
 });
 
 test("same-building transition keeps the campus guide secondary", async ({

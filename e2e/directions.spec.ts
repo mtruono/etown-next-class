@@ -25,7 +25,7 @@ test("location is requested only after Campus guide and stays in-app", async ({
   await expect(
     page.getByRole("img", { name: /Campus orientation to Nicarry Hall/u }),
   ).toBeVisible();
-  await expect(page.getByText("Room 202")).toBeVisible();
+  await expect(page.getByText("Room 202", { exact: true })).toBeVisible();
   await expect(page.getByText(/straight line/u)).toBeVisible();
   await expect(page.locator("main a[href]")).toHaveCount(0);
   await expect(page).toHaveURL("/");
