@@ -327,6 +327,7 @@ export function renderSchedule(
   configuration: AppConfiguration,
   state: ScheduleState,
   online: boolean,
+  locationCheckInsEnabled: boolean,
   actions: ScheduleActions,
 ): void {
   root.replaceChildren();
@@ -350,6 +351,15 @@ export function renderSchedule(
       element("p", {
         className: "offline-banner",
         text: "You’re offline. The public schedule is still available; live navigation needs a connection.",
+        attributes: { role: "status" },
+      }),
+    );
+  }
+  if (locationCheckInsEnabled) {
+    main.append(
+      element("p", {
+        className: "location-sharing-banner",
+        text: "Location check-ins ON · one point when directions start",
         attributes: { role: "status" },
       }),
     );

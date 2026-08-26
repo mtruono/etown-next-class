@@ -29,6 +29,7 @@ export default defineConfig({
       ...process.env,
       GITHUB_REPOSITORY: "",
       VITE_TELEMETRY_ENDPOINT: "http://127.0.0.1:4173/__telemetry",
+      VITE_LOCATION_CHECKIN_ENDPOINT: "http://127.0.0.1:4173/__checkin",
     },
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,

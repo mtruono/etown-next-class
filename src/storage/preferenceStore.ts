@@ -11,6 +11,13 @@ export const EXTERNAL_PROVIDER_STORAGE_KEY =
 export const PROVIDER_STORAGE_KEY = CAMPUS_PROVIDER_STORAGE_KEY;
 export const TELEMETRY_ENABLED_STORAGE_KEY =
   "etown-next-class.preference.telemetry-enabled.v1";
+export const LOCATION_CHECKIN_ENABLED_STORAGE_KEY =
+  "etown-next-class.preference.location-checkin-enabled.v1";
+export const LOCATION_CHECKIN_CONSENT_STORAGE_KEY =
+  "etown-next-class.preference.location-checkin-consent.v1";
+export const LOCATION_CHECKIN_DEVICE_ID_STORAGE_KEY =
+  "etown-next-class.location-checkin.device-id.v1";
+export const LOCATION_CHECKIN_CONSENT_VERSION = "location-checkin-v1";
 const campusProviders = new Set<CampusProviderPreference>([
   "concept3d",
   "external",
@@ -27,6 +34,10 @@ export interface PreferenceStore {
   setExternalProvider(provider: ExternalProviderPreference): void;
   getTelemetryEnabled(): boolean;
   setTelemetryEnabled(enabled: boolean): void;
+  getLocationCheckInEnabled(): boolean;
+  setLocationCheckInEnabled(enabled: boolean): void;
+  getLocationCheckInDeviceId(): string | null;
+  getOrCreateLocationCheckInDeviceId(randomUUID?: () => string): string;
   getRouteProvider(): "concept3d" | "apple" | "google";
   setRouteProvider(provider: "concept3d" | "apple" | "google"): void;
 }
@@ -61,6 +72,33 @@ export function createPreferenceStore(storage: Storage): PreferenceStore {
     },
     setTelemetryEnabled(enabled) {
       storage.setItem(TELEMETRY_ENABLED_STORAGE_KEY, String(enabled));
+    },
+    getLocationCheckInEnabled() {
+      return (
+        storage.getItem(LOCATION_CHECKIN_ENABLED_STORAGE_KEY) === "true" &&
+        storage.getItem(LOCATION_CHECKIN_CONSENT_STORAGE_KEY) ===
+          LOCATION_CHECKIN_CONSENT_VERSION
+      );
+    },
+    setLocationCheckInEnabled(enabled) {
+      storage.setItem(LOCATION_CHECKIN_ENABLED_STORAGE_KEY, String(enabled));
+      if (enabled) {
+        storage.setItem(
+          LOCATION_CHECKIN_CONSENT_STORAGE_KEY,
+          LOCATION_CHECKIN_CONSENT_VERSION,
+        );
+      }
+    },
+    getLocationCheckInDeviceId() {
+      const existing = storage.getItem(LOCATION_CHECKIN_DEVICE_ID_STORAGE_KEY);
+      return existing && /^[0-9a-f-]{36}$/iu.test(existing) ? existing : null;
+    },
+    getOrCreateLocationCheckInDeviceId(randomUUID = () => crypto.randomUUID()) {
+      const existing = this.getLocationCheckInDeviceId();
+      if (existing) return existing;
+      const created = randomUUID();
+      storage.setItem(LOCATION_CHECKIN_DEVICE_ID_STORAGE_KEY, created);
+      return created;
     },
     getRouteProvider() {
       const preferences = this.getNavigationPreferences();

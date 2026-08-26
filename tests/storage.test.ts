@@ -4,6 +4,10 @@ import {
 } from "../src/storage/configurationStore";
 import {
   createPreferenceStore,
+  LOCATION_CHECKIN_CONSENT_STORAGE_KEY,
+  LOCATION_CHECKIN_CONSENT_VERSION,
+  LOCATION_CHECKIN_DEVICE_ID_STORAGE_KEY,
+  LOCATION_CHECKIN_ENABLED_STORAGE_KEY,
   PROVIDER_STORAGE_KEY,
 } from "../src/storage/preferenceStore";
 import { syntheticConfiguration } from "./fixtures/syntheticConfiguration";
@@ -45,6 +49,34 @@ describe("local storage adapters", () => {
     localStorage.setItem(PROVIDER_STORAGE_KEY, "arbitrary-provider");
     expect(createPreferenceStore(localStorage).getRouteProvider()).toBe(
       "concept3d",
+    );
+  });
+
+  it("keeps exact-location check-ins off until current explicit consent", () => {
+    const store = createPreferenceStore(localStorage);
+    expect(store.getLocationCheckInEnabled()).toBe(false);
+    localStorage.setItem(LOCATION_CHECKIN_ENABLED_STORAGE_KEY, "true");
+    expect(store.getLocationCheckInEnabled()).toBe(false);
+    store.setLocationCheckInEnabled(true);
+    expect(store.getLocationCheckInEnabled()).toBe(true);
+    expect(localStorage.getItem(LOCATION_CHECKIN_CONSENT_STORAGE_KEY)).toBe(
+      LOCATION_CHECKIN_CONSENT_VERSION,
+    );
+    store.setLocationCheckInEnabled(false);
+    expect(store.getLocationCheckInEnabled()).toBe(false);
+  });
+
+  it("creates a stable, non-personal location-check-in phone ID", () => {
+    const store = createPreferenceStore(localStorage);
+    const id = store.getOrCreateLocationCheckInDeviceId(
+      () => "6ba7b810-9dad-41d1-80b4-00c04fd430c8",
+    );
+    expect(id).toBe("6ba7b810-9dad-41d1-80b4-00c04fd430c8");
+    expect(localStorage.getItem(LOCATION_CHECKIN_DEVICE_ID_STORAGE_KEY)).toBe(
+      id,
+    );
+    expect(store.getOrCreateLocationCheckInDeviceId(() => "different")).toBe(
+      id,
     );
   });
 });

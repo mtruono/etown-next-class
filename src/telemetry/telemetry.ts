@@ -1,6 +1,6 @@
 import { APP_STORAGE_PREFIX } from "../storage/configurationStore";
 
-export const APP_VERSION = "1.1.0";
+export const APP_VERSION = "1.2.0";
 export const INSTALLATION_ID_STORAGE_KEY = `${APP_STORAGE_PREFIX}telemetry.installation-id.v1`;
 export const SESSION_OPEN_STORAGE_KEY = `${APP_STORAGE_PREFIX}telemetry.open-sent.v1`;
 

@@ -13,6 +13,9 @@ export interface SettingsActions {
   setCampusProvider(provider: CampusProviderPreference): void;
   setExternalProvider(provider: ExternalProviderPreference): void;
   setTelemetryEnabled(enabled: boolean): void;
+  enableLocationCheckIns(): void;
+  pauseLocationCheckIns(): void;
+  deleteLocationCheckIns(): void;
   forgetAppData(): void;
 }
 
@@ -32,6 +35,8 @@ export function renderSettings(
   _configuration: AppConfiguration,
   preferences: NavigationPreferences,
   telemetryEnabled: boolean,
+  locationCheckInsEnabled: boolean,
+  locationDeviceCode: string | null,
   actions: SettingsActions,
 ): void {
   root.replaceChildren();
@@ -122,6 +127,58 @@ export function renderSettings(
     ),
     element(
       "section",
+      {
+        className: `panel location-consent${locationCheckInsEnabled ? " is-enabled" : ""}`,
+      },
+      element("p", {
+        className: `status-pill${locationCheckInsEnabled ? " sharing" : ""}`,
+        text: locationCheckInsEnabled
+          ? "LOCATION SHARING ON"
+          : "LOCATION SHARING OFF",
+      }),
+      element("h2", { text: "Location check-ins" }),
+      element("p", {
+        text: locationCheckInsEnabled
+          ? "One GPS point is shared with the app owner when you start class or home directions. There is no background tracking. Each point is deleted within 24 hours."
+          : "Off by default. If you choose to turn it on, one GPS point is shared with the app owner only when you start class or home directions.",
+      }),
+      locationCheckInsEnabled && locationDeviceCode
+        ? element("p", {
+            className: "device-code",
+            text: `This phone: ${locationDeviceCode}`,
+          })
+        : null,
+      locationCheckInsEnabled
+        ? actionButton(
+            "Pause location check-ins",
+            actions.pauseLocationCheckIns,
+            {
+              className: "button button-secondary",
+            },
+          )
+        : actionButton(
+            "Turn on location check-ins",
+            actions.enableLocationCheckIns,
+            {
+              className: "button button-primary",
+            },
+          ),
+      locationCheckInsEnabled
+        ? actionButton(
+            "Delete stored check-ins",
+            actions.deleteLocationCheckIns,
+            {
+              className: "button button-danger",
+            },
+          )
+        : null,
+      element("p", {
+        className: "help-text",
+        text: "No class, room, destination, route, name, or contact information is attached to a location check-in.",
+      }),
+    ),
+    element(
+      "section",
       { className: "panel toggle-panel" },
       element(
         "div",
@@ -146,7 +203,7 @@ export function renderSettings(
       element("summary", { text: "Reset this app" }),
       element("p", {
         className: "help-text",
-        text: "This removes map choices, the anonymous installation ID, and app preferences from this device. The public Fall 2026 schedule stays available.",
+        text: "This first deletes stored location check-ins, then removes map choices, random IDs, and app preferences from this device. The public Fall 2026 schedule stays available.",
       }),
       actionButton("Reset app preferences", actions.forgetAppData, {
         className: "button button-danger",

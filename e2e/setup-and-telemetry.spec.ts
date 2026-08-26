@@ -1,6 +1,12 @@
 import { expect, test } from "@playwright/test";
 
-import { TELEMETRY_ENABLED_STORAGE_KEY } from "../src/storage/preferenceStore";
+import {
+  LOCATION_CHECKIN_CONSENT_STORAGE_KEY,
+  LOCATION_CHECKIN_CONSENT_VERSION,
+  LOCATION_CHECKIN_DEVICE_ID_STORAGE_KEY,
+  LOCATION_CHECKIN_ENABLED_STORAGE_KEY,
+  TELEMETRY_ENABLED_STORAGE_KEY,
+} from "../src/storage/preferenceStore";
 import { installGeolocation, openAssistant } from "./helpers";
 
 test("ordinary public link opens the complete Fall 2026 schedule", async ({
@@ -97,4 +103,46 @@ test("telemetry-disabled mode sends no events", async ({ page }) => {
   );
   await page.waitForTimeout(150);
   expect(requests).toBe(0);
+});
+
+test("location check-ins default off and send one point only after opt-in", async ({
+  page,
+}) => {
+  const bodies: string[] = [];
+  await page.route("**/__checkin", async (route) => {
+    bodies.push(route.request().postData() ?? "");
+    await route.fulfill({ status: 204, body: "" });
+  });
+  await installGeolocation(page, {
+    latitude: 39.95,
+    longitude: -75.16,
+    accuracy: 18,
+  });
+  await page.route("https://map.concept3d.com/**", (route) => route.abort());
+  await openAssistant(
+    page,
+    undefined,
+    undefined,
+    {
+      [LOCATION_CHECKIN_ENABLED_STORAGE_KEY]: "true",
+      [LOCATION_CHECKIN_CONSENT_STORAGE_KEY]: LOCATION_CHECKIN_CONSENT_VERSION,
+      [LOCATION_CHECKIN_DEVICE_ID_STORAGE_KEY]:
+        "6ba7b810-9dad-41d1-80b4-00c04fd430c8",
+    },
+    true,
+  );
+  await expect(page.getByText(/Location check-ins ON/u)).toBeVisible();
+  await page.getByRole("button", { name: /Take me home to/u }).click();
+  await expect.poll(() => bodies.length).toBe(1);
+  const payload = JSON.parse(bodies[0]!) as Record<string, unknown>;
+  expect(payload).toMatchObject({
+    consent_version: LOCATION_CHECKIN_CONSENT_VERSION,
+    device_code: "6BA7B8",
+    latitude: 39.95,
+    longitude: -75.16,
+    accuracy: 18,
+  });
+  expect(payload).not.toHaveProperty("target");
+  expect(payload).not.toHaveProperty("course");
+  await expect(page.getByText(/check-in shared/u)).toBeVisible();
 });

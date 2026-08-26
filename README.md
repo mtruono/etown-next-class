@@ -12,6 +12,7 @@ The app stays on GitHub Pages and requires no account, login, password, setup li
 - Apple Maps, Google Maps, and a full-screen Etown map remain available as backups. Off campus or with low location accuracy, the selected external map remains the practical default and receives the destination without an explicit origin.
 - The former straight-line schematic and its code have been removed. The in-app route follows Etown’s mapped wayfinding network.
 - The public schedule remains available offline after the app has loaded; live navigation requires connectivity.
+- Optional exact-location check-ins start off. If the phone user explicitly enables them, one point is shared only when directions start, remains visibly indicated, and is deleted within 24 hours. There is no background tracking.
 
 ## Public schedule and private identity
 
@@ -33,8 +34,13 @@ npm run check
 
 Use `http://127.0.0.1:5173/?demo=1` for a fictional local demonstration. The ordinary URL always uses the public Fall 2026 schedule and ignores any old setup fragment.
 
-## Anonymous telemetry
+## Owner status and privacy
 
-The optional `telemetry-worker/` Cloudflare Worker accepts only a strict event allowlist, hashes the random installation UUID with a server-side salt, stores no IP address or request headers in D1, and protects the owner dashboard with server-side secrets. If `VITE_TELEMETRY_ENDPOINT` is absent, telemetry is a no-op. The student can turn sharing off in Settings.
+The optional `telemetry-worker/` Cloudflare Worker keeps two deliberately separate paths:
+
+- Anonymous usage accepts only a strict event allowlist, rejects GPS fields, and hashes the random installation UUID with a server-side salt.
+- Location check-ins require the current consent marker, store only a point, accuracy, server timestamp, hashed phone ID, and short phone code, and remove records at 24 hours.
+
+The Worker stores no IP address or request headers in D1 and protects the owner dashboard with server-side secrets. If endpoints are absent, both clients are safe no-ops. The phone user can independently disable anonymous counts and pause or delete location check-ins in Settings.
 
 See [PRIVACY.md](PRIVACY.md), [COSTS.md](COSTS.md), and [REAL-IPHONE-TEST.md](REAL-IPHONE-TEST.md) before release.

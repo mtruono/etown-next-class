@@ -16,7 +16,15 @@ export function renderAbout(root: HTMLElement, back: () => void): void {
         text: "The website does not include a student name, ID number, email address, phone number, or dorm room number.",
       }),
       element("p", {
-        text: "Location is requested only after you tap a navigation button. It is held briefly in memory to choose a map and is never saved by this app or sent to anonymous usage tracking.",
+        text: "Location is requested only after you tap a navigation button. Location check-ins are a separate option that starts off: if you explicitly enable it, one GPS point and its accuracy are shared with the app owner when directions start and deleted within 24 hours. There is no background tracking.",
+      }),
+    ),
+    element(
+      "section",
+      { className: "panel" },
+      element("h2", { text: "Location check-in controls" }),
+      element("p", {
+        text: "Settings always shows whether check-ins are on. You can pause new check-ins or delete all stored check-ins for this phone. A check-in does not include a class, room, destination, route, name, or contact information.",
       }),
     ),
     element(
@@ -43,7 +51,7 @@ export function renderAbout(root: HTMLElement, back: () => void): void {
       { className: "panel" },
       element("h2", { text: "Anonymous usage" }),
       element("p", {
-        text: "If enabled, the app can record anonymous opens and navigation launch attempts. It never includes coordinates, schedule details, classes, rooms, a name, a route, or a referrer. You can switch it off in Settings.",
+        text: "Anonymous usage counts are separate from location check-ins. They never include coordinates, accuracy, schedule details, classes, rooms, a name, a route, or a referrer. You can switch them off in Settings.",
       }),
     ),
     element("p", {

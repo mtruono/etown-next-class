@@ -9,6 +9,7 @@ import type {
   RouteProviderId,
 } from "../domain/types";
 import { requestCurrentPosition } from "../location/geolocation";
+import { deviceCode, LocationCheckInClient } from "../location/locationCheckIn";
 import { assessCapturedLocation } from "../location/locationDecision";
 import {
   createClassNavigationTarget,
@@ -41,6 +42,7 @@ export class AppController {
   private readonly launchNavigation: NavigationLauncher;
   private readonly preferences: PreferenceStore;
   private readonly telemetry: TelemetryClient;
+  private readonly locationCheckIns: LocationCheckInClient;
   private state: AppState;
   private clockTimer: number | null = null;
   private applyUpdate: (() => Promise<void>) | null = null;
@@ -54,12 +56,14 @@ export class AppController {
       endpoint: "",
       enabled: false,
     }),
+    locationCheckIns: LocationCheckInClient = new LocationCheckInClient(),
     private readonly onForget: () => void = () => window.location.reload(),
   ) {
     this.now = now;
     this.launchNavigation = launchNavigation;
     this.preferences = createPreferenceStore(window.localStorage);
     this.telemetry = telemetry;
+    this.locationCheckIns = locationCheckIns;
     this.state = {
       view: "home",
       configuration,
@@ -118,6 +122,7 @@ export class AppController {
       assessment: null,
       chosenProvider: null,
       launchUrl: null,
+      checkInStatus: "off",
     };
   }
 
@@ -209,6 +214,21 @@ export class AppController {
     let provider: RouteProviderId;
     if (result.ok) {
       session.capturedPosition = result.position;
+      if (this.preferences.getLocationCheckInEnabled()) {
+        session.checkInStatus = "sending";
+        this.render();
+        const deviceId = this.preferences.getOrCreateLocationCheckInDeviceId();
+        void this.locationCheckIns
+          .share(
+            { deviceId, deviceCode: deviceCode(deviceId) },
+            result.position,
+          )
+          .then((status) => {
+            if (this.state.directions !== session) return;
+            session.checkInStatus = status;
+            this.render();
+          });
+      }
       session.assessment = assessCapturedLocation(
         this.state.configuration,
         result.position,
@@ -264,6 +284,7 @@ export class AppController {
           configuration,
           getScheduleState(configuration, this.now()),
           this.state.online,
+          this.preferences.getLocationCheckInEnabled(),
           {
             openSettings: () => {
               this.state.view = "settings";
@@ -303,6 +324,10 @@ export class AppController {
           configuration,
           this.preferences.getNavigationPreferences(),
           this.preferences.getTelemetryEnabled(),
+          this.preferences.getLocationCheckInEnabled(),
+          this.preferences.getLocationCheckInDeviceId()
+            ? deviceCode(this.preferences.getLocationCheckInDeviceId()!)
+            : null,
           {
             back: () => {
               this.state.view = "home";
@@ -325,7 +350,51 @@ export class AppController {
               this.preferences.setTelemetryEnabled(enabled);
               this.render();
             },
-            forgetAppData: () => {
+            enableLocationCheckIns: () => {
+              const accepted = window.confirm(
+                "Turn on location check-ins? One exact GPS point will be shared with the app owner whenever you start class or home directions. There is no background tracking. Each point is deleted within 24 hours.",
+              );
+              if (!accepted) return;
+              this.preferences.getOrCreateLocationCheckInDeviceId();
+              this.preferences.setLocationCheckInEnabled(true);
+              this.render();
+            },
+            pauseLocationCheckIns: () => {
+              this.preferences.setLocationCheckInEnabled(false);
+              this.render();
+            },
+            deleteLocationCheckIns: () => {
+              const deviceId = this.preferences.getLocationCheckInDeviceId();
+              if (!deviceId) return;
+              const accepted = window.confirm(
+                "Delete every stored location check-in for this phone?",
+              );
+              if (!accepted) return;
+              void this.locationCheckIns
+                .deleteAll({ deviceId, deviceCode: deviceCode(deviceId) })
+                .then((deleted) => {
+                  window.alert(
+                    deleted
+                      ? "Stored location check-ins were deleted."
+                      : "The check-ins could not be deleted right now. Please try again.",
+                  );
+                });
+            },
+            forgetAppData: async () => {
+              const locationDeviceId =
+                this.preferences.getLocationCheckInDeviceId();
+              if (locationDeviceId) {
+                const deleted = await this.locationCheckIns.deleteAll({
+                  deviceId: locationDeviceId,
+                  deviceCode: deviceCode(locationDeviceId),
+                });
+                if (!deleted) {
+                  window.alert(
+                    "The app could not delete stored location check-ins, so it has not reset yet. Check your connection and try again.",
+                  );
+                  return;
+                }
+              }
               createConfigurationStore(window.localStorage).eraseAllAppData();
               const sessionKeys: string[] = [];
               for (

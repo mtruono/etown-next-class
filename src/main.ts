@@ -3,6 +3,10 @@ import { registerSW } from "virtual:pwa-register";
 import { AppController } from "./app/appController";
 import { demoSchedule } from "./data/demoSchedule";
 import { publicSchedule } from "./data/publicSchedule";
+import {
+  LocationCheckInClient,
+  locationEndpointFromTelemetry,
+} from "./location/locationCheckIn";
 import { createConfigurationStore } from "./storage/configurationStore";
 import { createPreferenceStore } from "./storage/preferenceStore";
 import { TelemetryClient } from "./telemetry/telemetry";
@@ -30,6 +34,11 @@ function start(): void {
     endpoint: import.meta.env.VITE_TELEMETRY_ENDPOINT,
     enabled: preferences.getTelemetryEnabled(),
   });
+  const locationCheckIns = new LocationCheckInClient({
+    endpoint:
+      import.meta.env.VITE_LOCATION_CHECKIN_ENDPOINT ??
+      locationEndpointFromTelemetry(import.meta.env.VITE_TELEMETRY_ENDPOINT),
+  });
   void telemetry.appOpenOnce();
 
   const controller = new AppController(
@@ -38,6 +47,7 @@ function start(): void {
     configuration,
     undefined,
     telemetry,
+    locationCheckIns,
     () => window.location.reload(),
   );
   controller.start();

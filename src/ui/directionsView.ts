@@ -32,6 +32,21 @@ export function renderDirections(
   const main = element("main", {
     className: "content-stack navigation-status",
   });
+  if (session.checkInStatus !== "off") {
+    const checkInMessage =
+      session.checkInStatus === "sending"
+        ? "Sharing this one location check-in…"
+        : session.checkInStatus === "shared"
+          ? "Location check-in shared · deleted within 24 hours"
+          : "Directions still work, but the location check-in was not shared";
+    main.append(
+      element("p", {
+        className: `checkin-status ${session.checkInStatus}`,
+        text: checkInMessage,
+        attributes: { role: "status", "aria-live": "polite" },
+      }),
+    );
+  }
 
   if (!online) {
     main.append(

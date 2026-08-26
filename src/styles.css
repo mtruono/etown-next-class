@@ -1998,6 +1998,60 @@ details {
   accent-color: var(--blue);
 }
 
+.location-consent {
+  border: 2px solid #b8c5d9;
+}
+
+.location-consent.is-enabled {
+  border-color: #23724d;
+  background: #f1fbf5;
+}
+
+.location-consent h2 {
+  margin: 0.8rem 0 0.45rem;
+}
+
+.location-consent .button {
+  width: 100%;
+  margin-top: 0.7rem;
+}
+
+.status-pill.sharing,
+.location-sharing-banner,
+.checkin-status.shared {
+  background: #dff6e8;
+  color: #185b39;
+}
+
+.device-code {
+  border-radius: 0.8rem;
+  padding: 0.7rem;
+  background: white;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-align: center;
+}
+
+.location-sharing-banner,
+.checkin-status {
+  margin: 0;
+  border-radius: 0.8rem;
+  padding: 0.7rem 0.9rem;
+  font-size: 0.82rem;
+  font-weight: 800;
+  text-align: center;
+}
+
+.checkin-status.sending {
+  background: var(--blue-soft);
+  color: var(--blue);
+}
+
+.checkin-status.failed {
+  background: #fff1dc;
+  color: #75430d;
+}
+
 .reset-details {
   padding: 0.55rem 1rem 1rem;
   background: rgba(255, 255, 255, 0.8);

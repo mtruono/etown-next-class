@@ -13,6 +13,7 @@ export interface DirectionSession {
   assessment: LocationAssessment | null;
   chosenProvider: RouteProviderId | null;
   launchUrl: string | null;
+  checkInStatus: "off" | "sending" | "shared" | "failed";
 }
 
 export interface AppState {

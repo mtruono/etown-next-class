@@ -8,7 +8,15 @@ The website does not include a student name, student ID, email address, phone nu
 
 ## Location
 
-Location is requested only after **Take me to class** or **Take me home** is tapped. One captured point and its accuracy are kept in memory only long enough to classify on-campus versus off-campus and, when appropriate, construct the in-app Concept3D route. The assistant never places coordinates or accuracy in local storage, IndexedDB, telemetry, logs, or error reports.
+Location is requested only after **Take me to class** or **Take me home** is tapped. One captured point and its accuracy are kept in memory long enough to classify on-campus versus off-campus and, when appropriate, construct the in-app Concept3D route.
+
+### Optional owner check-ins
+
+Exact-location check-ins are a separate feature that defaults **off**. The phone user must explicitly turn them on in Settings after reading the consent prompt. When on, starting class or home directions sends at most one GPS point, accuracy, a random phone identifier, a six-character phone code, and a consent-version marker to the protected owner service. The service assigns its own timestamp.
+
+The check-in does not contain the class, course, room, destination, route, name, email, phone number, or other contact information. It never uses background location or `watchPosition`. A persistent home-screen indicator shows when sharing is on, directions show whether a point was shared, and Settings provides **Pause location check-ins** and **Delete stored check-ins** controls.
+
+Stored check-ins are visible only behind the owner dashboard authentication and are deleted when they reach 24 hours. Cleanup runs every minute and also runs during check-in and dashboard requests. The browser keeps the sharing preference and random phone identifier locally so the owner can distinguish this phone without storing the student's identity.
 
 For a confidently on-campus route, the captured starting point is handed to Etown’s official Concept3D map inside a no-referrer iframe. The embedded map’s location arrow can request live location for its blue dot; that behavior belongs to the official map provider and stops when its map is closed. For Apple Maps and Google Maps, the assistant omits the origin so the selected map can use “here.” Map providers have their own privacy practices.
 
@@ -16,10 +24,12 @@ For a confidently on-campus route, the captured starting point is handed to Etow
 
 When configured and enabled, the app records only these anonymous events: app open, class/home navigation tap, map launch attempt, location permission denial/timeout/unavailability, and telemetry disabled. Allowed dimensions are target type, provider, app version, and a server-hashed random installation ID.
 
-It does **not** send or store GPS location, accuracy, destination ID, building, course, course code, room, timetable, student name, email, dorm room, full URL, URL fragment, referrer, free-form errors, browser fingerprint, or user-agent string. The Worker does not write IP addresses or request headers to D1. Data older than 90 days is deleted during accepted writes.
+Anonymous usage sharing does **not** send or store GPS location, accuracy, destination ID, building, course, course code, room, timetable, student name, email, dorm room, full URL, URL fragment, referrer, free-form errors, browser fingerprint, or user-agent string. Its endpoint rejects coordinates and accuracy. The Worker does not write IP addresses or request headers to D1. Anonymous usage data older than 90 days is deleted during accepted writes.
 
 Sharing defaults on and can be disabled in Settings. When disabled, no subsequent events are sent. If no endpoint is configured, telemetry is a safe no-op. There is no advertising analytics, session replay, heatmap, or cookie banner.
 
 ## Delete local data
 
-Settings → **Reset this app** → **Reset app preferences** removes provider choices, the anonymous installation UUID, telemetry preference, and other application-prefixed browser storage. The public schedule remains available.
+Settings → **Delete stored check-ins** removes the saved server-side check-ins associated with this phone. **Pause location check-ins** stops new ones.
+
+Settings → **Reset this app** → **Reset app preferences** first requests deletion of server-side check-ins and stops if that deletion cannot be confirmed. It then removes provider choices, the anonymous installation UUID, location-sharing preference and phone identifier, telemetry preference, and other application-prefixed browser storage. The public schedule remains available.
