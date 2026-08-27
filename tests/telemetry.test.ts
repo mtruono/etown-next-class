@@ -19,11 +19,13 @@ describe("anonymous telemetry", () => {
     );
     expect(Object.keys(payload).sort()).toEqual([
       "app_version",
+      "device_code",
       "event",
       "installation_id",
       "provider",
       "target",
     ]);
+    expect(payload.device_code).toBe("6BA7B8");
     for (const forbidden of [
       "latitude",
       "longitude",

@@ -1,6 +1,6 @@
 import { APP_STORAGE_PREFIX } from "../storage/configurationStore";
 
-export const APP_VERSION = "1.2.0";
+export const APP_VERSION = "1.3.0";
 export const INSTALLATION_ID_STORAGE_KEY = `${APP_STORAGE_PREFIX}telemetry.installation-id.v1`;
 export const SESSION_OPEN_STORAGE_KEY = `${APP_STORAGE_PREFIX}telemetry.open-sent.v1`;
 
@@ -28,6 +28,12 @@ export interface TelemetryPayload extends TelemetryDimensions {
   event: TelemetryEventName;
   app_version: string;
   installation_id: string;
+  device_code: string;
+}
+
+export interface TelemetryIdentity {
+  deviceId: string;
+  deviceCode: string;
 }
 
 export interface TelemetryClientOptions {
@@ -51,10 +57,15 @@ export function makeTelemetryPayload(
     event,
     app_version: APP_VERSION,
     installation_id: installationId,
+    device_code: telemetryDeviceCode(installationId),
   };
   if (dimensions.target) payload.target = dimensions.target;
   if (dimensions.provider) payload.provider = dimensions.provider;
   return payload;
+}
+
+export function telemetryDeviceCode(installationId: string): string {
+  return installationId.replaceAll("-", "").slice(0, 6).toUpperCase();
 }
 
 export class TelemetryClient {
@@ -86,6 +97,11 @@ export class TelemetryClient {
     return created;
   }
 
+  identity(): TelemetryIdentity {
+    const deviceId = this.installationId();
+    return { deviceId, deviceCode: telemetryDeviceCode(deviceId) };
+  }
+
   async track(
     event: TelemetryEventName,
     dimensions: TelemetryDimensions = {},
@@ -93,7 +109,7 @@ export class TelemetryClient {
     if (!this.enabled || !this.endpoint) return;
     const payload = makeTelemetryPayload(
       event,
-      this.installationId(),
+      this.identity().deviceId,
       dimensions,
     );
     try {

@@ -3,10 +3,10 @@ import { expect, test } from "@playwright/test";
 import {
   LOCATION_CHECKIN_CONSENT_STORAGE_KEY,
   LOCATION_CHECKIN_CONSENT_VERSION,
-  LOCATION_CHECKIN_DEVICE_ID_STORAGE_KEY,
   LOCATION_CHECKIN_ENABLED_STORAGE_KEY,
   TELEMETRY_ENABLED_STORAGE_KEY,
 } from "../src/storage/preferenceStore";
+import { INSTALLATION_ID_STORAGE_KEY } from "../src/telemetry/telemetry";
 import { installGeolocation, openAssistant } from "./helpers";
 
 test("ordinary public link opens the complete Fall 2026 schedule", async ({
@@ -126,8 +126,7 @@ test("location check-ins default off and send one point only after opt-in", asyn
     {
       [LOCATION_CHECKIN_ENABLED_STORAGE_KEY]: "true",
       [LOCATION_CHECKIN_CONSENT_STORAGE_KEY]: LOCATION_CHECKIN_CONSENT_VERSION,
-      [LOCATION_CHECKIN_DEVICE_ID_STORAGE_KEY]:
-        "6ba7b810-9dad-41d1-80b4-00c04fd430c8",
+      [INSTALLATION_ID_STORAGE_KEY]: "6ba7b810-9dad-41d1-80b4-00c04fd430c8",
     },
     true,
   );

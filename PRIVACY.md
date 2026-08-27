@@ -22,9 +22,9 @@ For a confidently on-campus route, the captured starting point is handed to Etow
 
 ## Anonymous usage sharing
 
-When configured and enabled, the app records only these anonymous events: app open, class/home navigation tap, map launch attempt, location permission denial/timeout/unavailability, and telemetry disabled. Allowed dimensions are target type, provider, app version, and a server-hashed random installation ID.
+When configured and enabled, the app records only these anonymous events: app open, class/home navigation tap, map launch attempt, location permission denial/timeout/unavailability, and telemetry disabled. Allowed dimensions are target type, provider, app version, a six-character code derived from the random installation ID, and a server-hashed copy of that random ID. The code lets the owner match activity to the code visible on a particular phone without collecting the phone user's identity.
 
-Anonymous usage sharing does **not** send or store GPS location, accuracy, destination ID, building, course, course code, room, timetable, student name, email, dorm room, full URL, URL fragment, referrer, free-form errors, browser fingerprint, or user-agent string. Its endpoint rejects coordinates and accuracy. The Worker does not write IP addresses or request headers to D1. Anonymous usage data older than 90 days is deleted during accepted writes.
+Anonymous usage sharing does **not** send or store GPS location, accuracy, destination ID, building, course, course code, room, timetable, student name, email, dorm room, full URL, URL fragment, referrer, free-form errors, browser fingerprint, or user-agent string. Its endpoint rejects coordinates and accuracy. The Worker does not write IP addresses or request headers to D1. Anonymous usage data older than 90 days is deleted during accepted writes. If the same phone later opts into a location check-in, the protected dashboard can associate that check-in with its anonymous activity through the same server-hashed random ID; GPS coordinates remain stored only in the separate 24-hour check-in table.
 
 Sharing defaults on and can be disabled in Settings. When disabled, no subsequent events are sent. If no endpoint is configured, telemetry is a safe no-op. There is no advertising analytics, session replay, heatmap, or cookie banner.
 

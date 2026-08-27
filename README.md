@@ -38,9 +38,9 @@ Use `http://127.0.0.1:5173/?demo=1` for a fictional local demonstration. The ord
 
 The optional `telemetry-worker/` Cloudflare Worker keeps two deliberately separate paths:
 
-- Anonymous usage accepts only a strict event allowlist, rejects GPS fields, and hashes the random installation UUID with a server-side salt.
+- Anonymous usage accepts only a strict event allowlist, rejects GPS fields, hashes the random installation UUID with a server-side salt, and includes the phone's six-character code so the owner can recognize its history.
 - Location check-ins require the current consent marker, store only a point, accuracy, server timestamp, hashed phone ID, and short phone code, and remove records at 24 hours.
 
-The Worker stores no IP address or request headers in D1 and protects the owner dashboard with server-side secrets. If endpoints are absent, both clients are safe no-ops. The phone user can independently disable anonymous counts and pause or delete location check-ins in Settings.
+The Worker stores no IP address or request headers in D1 and protects the owner dashboard with server-side secrets. The dashboard shows phone-by-phone activity, a recent event timeline, map choices, clearly labeled GPS problems, and opted-in check-ins from the last 24 hours. If endpoints are absent, both clients are safe no-ops. The phone user can independently disable anonymous counts and pause or delete location check-ins in Settings.
 
 See [PRIVACY.md](PRIVACY.md), [COSTS.md](COSTS.md), and [REAL-IPHONE-TEST.md](REAL-IPHONE-TEST.md) before release.

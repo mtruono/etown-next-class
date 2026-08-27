@@ -1,3 +1,20 @@
+import { renderDashboard } from "./dashboard";
+
+export {
+  DAILY_ACTIVITY_SQL,
+  DASHBOARD_SUMMARY_SQL,
+  DEVICE_SUMMARY_SQL,
+  LOCATION_CHECKINS_SQL,
+  RECENT_EVENTS_SQL,
+} from "./dashboard";
+export type {
+  DailyActivityRow,
+  DashboardSummary,
+  DeviceSummaryRow,
+  LocationCheckInRow,
+  RecentEventRow,
+} from "./dashboard";
+
 export interface D1PreparedStatement {
   bind(...values: unknown[]): D1PreparedStatement;
   run(): Promise<unknown>;
@@ -39,6 +56,7 @@ const allowedKeys = new Set([
   "provider",
   "app_version",
   "installation_id",
+  "device_code",
 ]);
 const recentEvents = new Map<string, { windowStart: number; count: number }>();
 
@@ -48,6 +66,7 @@ interface EventPayload {
   provider?: string;
   app_version: string;
   installation_id: string;
+  device_code?: string;
 }
 
 interface CheckInPayload {
@@ -64,14 +83,6 @@ interface DeleteCheckInsPayload {
   device_id: string;
 }
 
-export interface LocationCheckInRow {
-  device_code: string;
-  latitude: number;
-  longitude: number;
-  accuracy_meters: number;
-  created_at: string;
-}
-
 const checkInKeys = new Set([
   "consent_version",
   "device_id",
@@ -81,46 +92,6 @@ const checkInKeys = new Set([
   "accuracy",
 ]);
 const deleteCheckInKeys = new Set(["consent_version", "device_id"]);
-
-export interface DashboardSummary {
-  last_app_open: string | null;
-  last_home_tap: string | null;
-  last_class_tap: string | null;
-  opens_7d: number;
-  opens_30d: number;
-  home_7d: number;
-  home_30d: number;
-  class_7d: number;
-  class_30d: number;
-  concept3d_launches: number;
-  apple_launches: number;
-  google_launches: number;
-  permission_denied: number;
-  location_timeouts: number;
-  location_unavailable: number;
-  installations: number;
-}
-
-export const DASHBOARD_SUMMARY_SQL = `
-SELECT
-  MAX(CASE WHEN event_name = 'app_open' THEN created_at END) AS last_app_open,
-  MAX(CASE WHEN event_name = 'take_me_home_tapped' THEN created_at END) AS last_home_tap,
-  MAX(CASE WHEN event_name = 'take_me_to_class_tapped' THEN created_at END) AS last_class_tap,
-  SUM(CASE WHEN event_name = 'app_open' AND created_at >= datetime('now', '-7 days') THEN 1 ELSE 0 END) AS opens_7d,
-  SUM(CASE WHEN event_name = 'app_open' AND created_at >= datetime('now', '-30 days') THEN 1 ELSE 0 END) AS opens_30d,
-  SUM(CASE WHEN event_name = 'take_me_home_tapped' AND created_at >= datetime('now', '-7 days') THEN 1 ELSE 0 END) AS home_7d,
-  SUM(CASE WHEN event_name = 'take_me_home_tapped' AND created_at >= datetime('now', '-30 days') THEN 1 ELSE 0 END) AS home_30d,
-  SUM(CASE WHEN event_name = 'take_me_to_class_tapped' AND created_at >= datetime('now', '-7 days') THEN 1 ELSE 0 END) AS class_7d,
-  SUM(CASE WHEN event_name = 'take_me_to_class_tapped' AND created_at >= datetime('now', '-30 days') THEN 1 ELSE 0 END) AS class_30d,
-  SUM(CASE WHEN event_name = 'map_launch_attempted' AND provider = 'concept3d' THEN 1 ELSE 0 END) AS concept3d_launches,
-  SUM(CASE WHEN event_name = 'map_launch_attempted' AND provider = 'apple' THEN 1 ELSE 0 END) AS apple_launches,
-  SUM(CASE WHEN event_name = 'map_launch_attempted' AND provider = 'google' THEN 1 ELSE 0 END) AS google_launches,
-  SUM(CASE WHEN event_name = 'location_permission_denied' THEN 1 ELSE 0 END) AS permission_denied,
-  SUM(CASE WHEN event_name = 'location_timeout' THEN 1 ELSE 0 END) AS location_timeouts,
-  SUM(CASE WHEN event_name = 'location_unavailable' THEN 1 ELSE 0 END) AS location_unavailable,
-  COUNT(DISTINCT installation_hash) AS installations
-FROM events
-WHERE created_at >= datetime('now', '-90 days')`;
 
 function allowedOrigins(env: Env): Set<string> {
   return new Set([
@@ -168,6 +139,12 @@ function validPayload(input: unknown): input is EventPayload {
     !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu.test(
       payload.installation_id,
     )
+  )
+    return false;
+  if (
+    payload.device_code !== undefined &&
+    (typeof payload.device_code !== "string" ||
+      !/^[0-9A-F]{6}$/u.test(payload.device_code))
   )
     return false;
   if (
@@ -273,15 +250,6 @@ function dashboardAuthorized(request: Request, env: Env): boolean {
   }
 }
 
-function escapeHtml(value: string | number | null): string {
-  return String(value ?? "Never")
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#39;");
-}
-
 async function eventResponse(
   request: Request,
   env: Env,
@@ -319,13 +287,14 @@ async function eventResponse(
       "DELETE FROM events WHERE created_at < datetime('now', '-90 days')",
     ),
     env.DB.prepare(
-      "INSERT INTO events (event_name, installation_hash, target, provider, app_version, created_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+      "INSERT INTO events (event_name, installation_hash, target, provider, app_version, device_code, created_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
     ).bind(
       parsed.event,
       installationHash,
       parsed.target ?? null,
       parsed.provider ?? null,
       parsed.app_version,
+      parsed.device_code ?? null,
       createdAt,
     ),
   ]);
@@ -415,28 +384,7 @@ async function deleteCheckInsResponse(
 }
 
 async function dashboardResponse(env: Env): Promise<Response> {
-  await env.DB.prepare(
-    "DELETE FROM location_checkins WHERE created_at <= datetime('now', '-24 hours')",
-  ).run();
-  const summary = await env.DB.prepare(
-    DASHBOARD_SUMMARY_SQL,
-  ).first<DashboardSummary>();
-  const checkIns = await env.DB.prepare(
-    "SELECT device_code, latitude, longitude, accuracy_meters, created_at FROM location_checkins WHERE created_at > datetime('now', '-24 hours') ORDER BY created_at DESC LIMIT 50",
-  ).all<LocationCheckInRow>();
-  const value = (key: keyof DashboardSummary): string =>
-    escapeHtml(summary?.[key] ?? 0);
-  const checkInCards = checkIns.results.length
-    ? checkIns.results
-        .map((row) => {
-          const latitude = Number(row.latitude).toFixed(6);
-          const longitude = Number(row.longitude).toFixed(6);
-          const mapUrl = `https://www.google.com/maps?q=${encodeURIComponent(`${latitude},${longitude}`)}`;
-          return `<article class="checkin"><strong>Phone ${escapeHtml(row.device_code)}</strong><time>${escapeHtml(row.created_at)}</time><p>${escapeHtml(latitude)}, ${escapeHtml(longitude)} · accuracy ${escapeHtml(Math.round(row.accuracy_meters))} m</p><a href="${mapUrl}" rel="noreferrer" target="_blank">View point on map</a></article>`;
-        })
-        .join("")
-    : '<p class="note">No opted-in check-ins during the last 24 hours.</p>';
-  const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><meta name="referrer" content="no-referrer"><title>Etown Assistant Status</title><style>body{font:16px system-ui;margin:0;background:#f4f6fb;color:#17213b}main{max-width:760px;margin:auto;padding:32px 18px}h1{margin:0 0 8px}.note{color:#667089}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px}.card{background:white;border-radius:16px;padding:18px;box-shadow:0 8px 24px #17213b12}.card strong{display:block;font-size:1.7rem;color:#173b7a}.wide{grid-column:1/-1}.location{margin-top:18px;border:2px solid #23724d}.checkin{border-top:1px solid #dce2ed;padding:14px 0}.checkin strong,.checkin time{display:block}.checkin strong{font-size:1rem}.checkin p{margin:6px 0}.checkin a{color:#174f9d;font-weight:700}</style></head><body><main><h1>Etown Campus Assistant</h1><p class="note">Usage counts are anonymous and cannot prove route completion or arrival.</p><section class="card location"><h2>Location check-ins · last 24 hours</h2><p class="note">These appear only after the phone user explicitly enables sharing and starts directions. They are not background tracking and are deleted after 24 hours.</p>${checkInCards}</section><div class="grid"><section class="card wide"><h2>Last activity</h2><p>App open: ${value("last_app_open")}</p><p>Take me home: ${value("last_home_tap")}</p><p>Class navigation: ${value("last_class_tap")}</p></section><section class="card"><span>Opens · 7 / 30 days</span><strong>${value("opens_7d")} / ${value("opens_30d")}</strong></section><section class="card"><span>Home taps · 7 / 30 days</span><strong>${value("home_7d")} / ${value("home_30d")}</strong></section><section class="card"><span>Class taps · 7 / 30 days</span><strong>${value("class_7d")} / ${value("class_30d")}</strong></section><section class="card"><span>Anonymous installations</span><strong>${value("installations")}</strong></section><section class="card wide"><h2>Map launch attempts</h2><p>Etown: ${value("concept3d_launches")} · Apple: ${value("apple_launches")} · Google: ${value("google_launches")}</p></section><section class="card wide"><h2>Location errors</h2><p>Denied: ${value("permission_denied")} · Timeouts: ${value("location_timeouts")} · Unavailable: ${value("location_unavailable")}</p></section></div></main></body></html>`;
+  const html = await renderDashboard(env.DB);
   return new Response(html, {
     headers: {
       "content-type": "text/html; charset=utf-8",

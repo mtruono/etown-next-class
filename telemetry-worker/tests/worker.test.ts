@@ -1,19 +1,33 @@
 import {
+  DAILY_ACTIVITY_SQL,
   DASHBOARD_SUMMARY_SQL,
+  DEVICE_SUMMARY_SQL,
+  LOCATION_CHECKINS_SQL,
+  RECENT_EVENTS_SQL,
   handleRequest,
+  type DailyActivityRow,
   type D1Database,
   type D1PreparedStatement,
   type DashboardSummary,
+  type DeviceSummaryRow,
   type Env,
   type LocationCheckInRow,
+  type RecentEventRow,
 } from "../src/index";
+
+interface DashboardData {
+  summary: DashboardSummary;
+  devices: DeviceSummaryRow[];
+  recent: RecentEventRow[];
+  daily: DailyActivityRow[];
+  checkIns: LocationCheckInRow[];
+}
 
 class Statement implements D1PreparedStatement {
   values: unknown[] = [];
   constructor(
     readonly query: string,
-    private readonly summary: DashboardSummary,
-    private readonly checkIns: LocationCheckInRow[],
+    private readonly data: DashboardData,
   ) {}
   bind(...values: unknown[]): D1PreparedStatement {
     this.values = values;
@@ -24,20 +38,31 @@ class Statement implements D1PreparedStatement {
   }
   first<T>(): Promise<T | null> {
     return Promise.resolve(
-      (this.query === DASHBOARD_SUMMARY_SQL ? this.summary : null) as T | null,
+      (this.query === DASHBOARD_SUMMARY_SQL
+        ? this.data.summary
+        : null) as T | null,
     );
   }
   all<T>(): Promise<{ results: T[] }> {
-    return Promise.resolve({ results: this.checkIns as T[] });
+    const results =
+      this.query === DEVICE_SUMMARY_SQL
+        ? this.data.devices
+        : this.query === RECENT_EVENTS_SQL
+          ? this.data.recent
+          : this.query === DAILY_ACTIVITY_SQL
+            ? this.data.daily
+            : this.query === LOCATION_CHECKINS_SQL
+              ? this.data.checkIns
+              : [];
+    return Promise.resolve({ results: results as T[] });
   }
 }
 
 function environment() {
   const statements: Statement[] = [];
   const summary = {
-    last_app_open: null,
-    last_home_tap: null,
-    last_class_tap: null,
+    last_activity: "2026-08-26T20:00:00.000Z",
+    events_7d: 8,
     opens_7d: 2,
     opens_30d: 4,
     home_7d: 1,
@@ -50,7 +75,9 @@ function environment() {
     permission_denied: 0,
     location_timeouts: 0,
     location_unavailable: 0,
+    active_devices_7d: 1,
     installations: 1,
+    checkins_24h: 1,
   } satisfies DashboardSummary;
   const checkIns: LocationCheckInRow[] = [
     {
@@ -61,9 +88,45 @@ function environment() {
       created_at: "2026-08-26T20:00:00.000Z",
     },
   ];
+  const devices: DeviceSummaryRow[] = [
+    {
+      installation_hash: "abc123",
+      device_code: "6BA7B8",
+      has_device_code: 1,
+      first_seen: "2026-08-24T14:00:00.000Z",
+      last_seen: "2026-08-26T20:00:00.000Z",
+      opens: 4,
+      active_days: 2,
+      class_taps: 3,
+      home_taps: 2,
+      map_launches: 4,
+      gps_denied: 1,
+      gps_timeouts: 0,
+      gps_unavailable: 0,
+      concept3d_launches: 2,
+      apple_launches: 1,
+      google_launches: 1,
+      app_version: "1.3.0",
+    },
+  ];
+  const recent: RecentEventRow[] = [
+    {
+      device_code: "6BA7B8",
+      has_device_code: 1,
+      created_at: "2026-08-26T20:00:00.000Z",
+      event_name: "location_permission_denied",
+      target: "class",
+      provider: null,
+      app_version: "1.3.0",
+    },
+  ];
+  const daily: DailyActivityRow[] = [
+    { day: "2026-08-26", opens: 2, route_taps: 3, map_launches: 2 },
+  ];
+  const data = { summary, devices, recent, daily, checkIns };
   const DB: D1Database = {
     prepare(query) {
-      const statement = new Statement(query, summary, checkIns);
+      const statement = new Statement(query, data);
       statements.push(statement);
       return statement;
     },
@@ -108,8 +171,9 @@ describe("telemetry worker", () => {
         event: "map_launch_attempted",
         target: "home",
         provider: "concept3d",
-        app_version: "1.1.0",
+        app_version: "1.3.0",
         installation_id: "6ba7b810-9dad-41d1-80b4-00c04fd430c8",
+        device_code: "6BA7B8",
       }),
       env,
     );
@@ -119,6 +183,7 @@ describe("telemetry worker", () => {
     expect(insert?.values).not.toContain(
       "6ba7b810-9dad-41d1-80b4-00c04fd430c8",
     );
+    expect(insert?.values[5]).toBe("6BA7B8");
   });
 
   it("rejects unknown properties and non-production origins", async () => {
@@ -131,6 +196,14 @@ describe("telemetry worker", () => {
     expect(
       (await handleRequest(eventRequest({ ...base, latitude: 40 }), env))
         .status,
+    ).toBe(400);
+    expect(
+      (
+        await handleRequest(
+          eventRequest({ ...base, device_code: "not-a-code" }),
+          env,
+        )
+      ).status,
     ).toBe(400);
     expect(
       (await handleRequest(eventRequest(base, "https://attacker.example"), env))
@@ -229,8 +302,10 @@ describe("telemetry worker", () => {
     );
     expect(allowed.status).toBe(200);
     const html = await allowed.text();
-    expect(html).toContain("Anonymous installations");
+    expect(html).toContain("Etown App Analytics");
     expect(html).toContain("Phone 6BA7B8");
+    expect(html).toContain("GPS permission denied");
+    expect(html).toContain("The browser refused location");
     expect(html).toContain("40.151200, -76.602300");
   });
 

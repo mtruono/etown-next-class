@@ -9,7 +9,7 @@ import type {
   RouteProviderId,
 } from "../domain/types";
 import { requestCurrentPosition } from "../location/geolocation";
-import { deviceCode, LocationCheckInClient } from "../location/locationCheckIn";
+import { LocationCheckInClient } from "../location/locationCheckIn";
 import { assessCapturedLocation } from "../location/locationDecision";
 import {
   createClassNavigationTarget,
@@ -217,12 +217,9 @@ export class AppController {
       if (this.preferences.getLocationCheckInEnabled()) {
         session.checkInStatus = "sending";
         this.render();
-        const deviceId = this.preferences.getOrCreateLocationCheckInDeviceId();
+        const identity = this.telemetry.identity();
         void this.locationCheckIns
-          .share(
-            { deviceId, deviceCode: deviceCode(deviceId) },
-            result.position,
-          )
+          .share(identity, result.position)
           .then((status) => {
             if (this.state.directions !== session) return;
             session.checkInStatus = status;
@@ -325,9 +322,7 @@ export class AppController {
           this.preferences.getNavigationPreferences(),
           this.preferences.getTelemetryEnabled(),
           this.preferences.getLocationCheckInEnabled(),
-          this.preferences.getLocationCheckInDeviceId()
-            ? deviceCode(this.preferences.getLocationCheckInDeviceId()!)
-            : null,
+          this.telemetry.identity().deviceCode,
           {
             back: () => {
               this.state.view = "home";
@@ -355,7 +350,7 @@ export class AppController {
                 "Turn on location check-ins? One exact GPS point will be shared with the app owner whenever you start class or home directions. There is no background tracking. Each point is deleted within 24 hours.",
               );
               if (!accepted) return;
-              this.preferences.getOrCreateLocationCheckInDeviceId();
+              this.telemetry.identity();
               this.preferences.setLocationCheckInEnabled(true);
               this.render();
             },
@@ -364,36 +359,28 @@ export class AppController {
               this.render();
             },
             deleteLocationCheckIns: () => {
-              const deviceId = this.preferences.getLocationCheckInDeviceId();
-              if (!deviceId) return;
+              const identity = this.telemetry.identity();
               const accepted = window.confirm(
                 "Delete every stored location check-in for this phone?",
               );
               if (!accepted) return;
-              void this.locationCheckIns
-                .deleteAll({ deviceId, deviceCode: deviceCode(deviceId) })
-                .then((deleted) => {
-                  window.alert(
-                    deleted
-                      ? "Stored location check-ins were deleted."
-                      : "The check-ins could not be deleted right now. Please try again.",
-                  );
-                });
+              void this.locationCheckIns.deleteAll(identity).then((deleted) => {
+                window.alert(
+                  deleted
+                    ? "Stored location check-ins were deleted."
+                    : "The check-ins could not be deleted right now. Please try again.",
+                );
+              });
             },
             forgetAppData: async () => {
-              const locationDeviceId =
-                this.preferences.getLocationCheckInDeviceId();
-              if (locationDeviceId) {
-                const deleted = await this.locationCheckIns.deleteAll({
-                  deviceId: locationDeviceId,
-                  deviceCode: deviceCode(locationDeviceId),
-                });
-                if (!deleted) {
-                  window.alert(
-                    "The app could not delete stored location check-ins, so it has not reset yet. Check your connection and try again.",
-                  );
-                  return;
-                }
+              const deleted = await this.locationCheckIns.deleteAll(
+                this.telemetry.identity(),
+              );
+              if (!deleted) {
+                window.alert(
+                  "The app could not delete stored location check-ins, so it has not reset yet. Check your connection and try again.",
+                );
+                return;
               }
               createConfigurationStore(window.localStorage).eraseAllAppData();
               const sessionKeys: string[] = [];

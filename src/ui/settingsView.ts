@@ -36,7 +36,7 @@ export function renderSettings(
   preferences: NavigationPreferences,
   telemetryEnabled: boolean,
   locationCheckInsEnabled: boolean,
-  locationDeviceCode: string | null,
+  locationDeviceCode: string,
   actions: SettingsActions,
 ): void {
   root.replaceChildren();
@@ -142,12 +142,14 @@ export function renderSettings(
           ? "One GPS point is shared with the app owner when you start class or home directions. There is no background tracking. Each point is deleted within 24 hours."
           : "Off by default. If you choose to turn it on, one GPS point is shared with the app owner only when you start class or home directions.",
       }),
-      locationCheckInsEnabled && locationDeviceCode
-        ? element("p", {
-            className: "device-code",
-            text: `This phone: ${locationDeviceCode}`,
-          })
-        : null,
+      element("p", {
+        className: "device-code",
+        text: `This phone: ${locationDeviceCode}`,
+      }),
+      element("p", {
+        className: "help-text",
+        text: "Match this code to the owner dashboard to recognize this phone’s anonymous activity.",
+      }),
       locationCheckInsEnabled
         ? actionButton(
             "Pause location check-ins",
